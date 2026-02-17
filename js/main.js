@@ -12,7 +12,7 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const objLingot = new Image();
-objLingot.src = "assets/lingotV2.png";
+objLingot.src = "assets/images/lingot.png";
 objLingot.onload = () => {
   dessinerBordure(canvas, ctx);
 
