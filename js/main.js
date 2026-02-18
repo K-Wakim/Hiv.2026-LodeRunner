@@ -47,6 +47,12 @@ function redessiner() {
 }
 
 function update() {
+  console.log(
+    joueur.col,
+    joueur.row,
+    joueur.getCellCourante(),
+    joueur.getCellDessous(),
+  );
   if (keys.left) joueur.deplacementHorizontal(-1);
   if (keys.right) joueur.deplacementHorizontal(1);
   if (keys.up) joueur.monterEchelle();
