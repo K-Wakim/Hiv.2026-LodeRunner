@@ -1,12 +1,21 @@
 import { niv1 } from "./niveau.js";
 import {
   dessinerBeton,
-  dessinerBordure,
   dessinerBrique,
   dessinerEchelle,
   dessinerCorde,
   dessinerLingot,
 } from "./dessiner.js";
+
+import {
+  dessinerBordure,
+  dessinerNoms,
+  dessinerScore,
+  dessinerTemps,
+  dessinerTitre,
+  dessinerNiveauCourant,
+  dessinerVie,
+} from "./hud.js";
 
 import { Joueur } from "./joueur.js";
 import { input, keys } from "./input.js";
@@ -20,7 +29,12 @@ const objLingot = new Image();
 objLingot.src = "assets/images/lingot.png";
 
 // Joueur
-const joueur = new Joueur(niv1, 2, 1, "assets/images/imgJoueur/BaseRunner.png");
+const joueur = new Joueur(
+  niv1,
+  14,
+  14,
+  "assets/images/imgJoueur/BaseRunner.png",
+);
 
 // Input
 input(canvas);
@@ -28,14 +42,26 @@ input(canvas);
 // Dessiner le niveau
 function dessinerNiveau() {
   dessinerBordure(canvas, ctx);
+  dessinerTitre(ctx, canvas);
+  dessinerNoms(ctx, canvas);
+  dessinerScore(ctx, canvas);
+  dessinerTemps(ctx, canvas);
+  dessinerNiveauCourant(ctx, canvas);
+  dessinerVie(ctx, canvas);
 
   niv1.forEach((ligne, y) => {
     ligne.forEach((caseType, x) => {
       if (caseType === "Be") dessinerBeton(ctx, x * 32, y * 32);
       if (caseType === "B") dessinerBrique(ctx, x * 32, y * 32);
-      if (caseType === "E") dessinerEchelle(ctx, x * 32, y * 32);
       if (caseType === "C") dessinerCorde(ctx, x * 32, y * 32);
-      if (caseType === "L" && objLingot.complete) dessinerLingot(ctx, x * 32, y * 32, objLingot);
+      if (caseType === "L" && objLingot.complete)
+        dessinerLingot(ctx, x * 32, y * 32, objLingot);
+    });
+  });
+
+  niv1.forEach((ligne, y) => {
+    ligne.forEach((caseType, x) => {
+      if (caseType === "E") dessinerEchelle(ctx, x * 32, y * 32);
     });
   });
 }
@@ -62,35 +88,3 @@ objLingot.onload = () => redessiner();
 redessiner();
 
 setInterval(update, 16);
-
-/*
-const objLingot = new Image();
-objLingot.src = "assets/images/lingot.png";
-objLingot.onload = () => {
-  dessinerBordure(canvas, ctx);
-
-  niv1.forEach((ligne, y) => {
-    ligne.forEach((caseType, x) => {
-      if (caseType === "Be") {
-        dessinerBeton(ctx, x * 32, y * 32);
-      }
-
-      if (caseType === "B") {
-        dessinerBrique(ctx, x * 32, y * 32);
-      }
-
-      if (caseType === "E") {
-        dessinerEchelle(ctx, x * 32, y * 32);
-      }
-
-      if (caseType === "C") {
-        dessinerCorde(ctx, x * 32, y * 32);
-      }
-
-      if (caseType === "L") {
-        if (objLingot.complete) dessinerLingot(ctx, x * 32, y * 32, objLingot);
-      }
-    });
-  }); 
-};
-*/

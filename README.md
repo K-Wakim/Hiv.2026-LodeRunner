@@ -2,14 +2,14 @@
 
 ## 1. Map
 
-    1.1 Layout
-    1.2 Empty cells
-    1.2 Bricks
-    1.3 Ladders
-    1.4 Ropes
-    1.5 Treasures
-    1.6 Bedrock
-    1.7 Levels (map)
+    ~1.1 Layout~
+    ~1.2 Empty cells~
+    ~1.2 Bricks~
+    ~1.3 Ladders~
+    ~1.4 Ropes~
+    ~1.5 Treasures~
+    ~1.6 Bedrock~
+    ~1.7 Levels (map)~
 
 ## 2. Player
 
@@ -22,12 +22,12 @@
 
 ## 3. HUD
 
-    3.1 Border
-    3.2 Names + Title
-    3.3 Score
-    3.4 Time
-    3.5 Level (number)
-    3.6 Lives
+    ~3.1 Border~
+    ~3.2 Names + Title~
+    ~3.3 Score~
+    ~3.4 Time~
+    ~3.5 Level (number)~
+    ~3.6 Lives~
     3.7 Sounds
     3.8 Win / Lose Screen
 

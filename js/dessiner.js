@@ -1,3 +1,7 @@
+/*
+ * LIBRAIRIE DE FONCTIONS DE DESSIIN DU NIVEAU
+ */
+
 function dessinerBeton(ctx, x, y) {
   ctx.fillStyle = "#B0B0B0";
   ctx.fillRect(x + 32, y, 32, 32);
@@ -89,12 +93,6 @@ function dessinerCorde(ctx, x, y) {
   ctx.stroke();
 }
 
-function dessinerBordure(canvas, ctx) {
-  ctx.strokeStyle = "yellow";
-  ctx.lineWidth = 64;
-  ctx.strokeRect(0, 0, canvas.width, canvas.height);
-}
-
 function dessinerLingot(ctx, x, y, objLingot) {
   x += 32;
   ctx.drawImage(objLingot, x, y, 32, 32);
@@ -102,7 +100,6 @@ function dessinerLingot(ctx, x, y, objLingot) {
 
 export {
   dessinerBeton,
-  dessinerBordure,
   dessinerBrique,
   dessinerEchelle,
   dessinerCorde,
