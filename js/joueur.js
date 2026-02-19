@@ -2,6 +2,7 @@
 
 const TAILLE_CELLULE = 32;
 const OFFSET_BORDURE = 32; // Pour la bordure (lineWidth 64 => 32px dedans)
+const CORDE_OFFSET = 4;
 
 // Cellules
 const SOLIDE = new Set(["B", "Be"]); // Brique, Béton
@@ -152,6 +153,14 @@ export class Joueur {
     return cellule(this.niveau, col, row);
   }
 
+  alignerSurCorde() {
+    const row = this.row;
+    const yCorde = row * TAILLE_CELLULE + CORDE_OFFSET;
+    const AJUSTEMENT_SPRITE = 12;
+
+    this.y = yCorde - AJUSTEMENT_SPRITE;
+  }
+
   // ---- Mouvement horizontal ----
   deplacementHorizontal(direction) {
     if (this.enChute) return;
@@ -269,6 +278,9 @@ export class Joueur {
     if (this.estSurCorde() && !this.lacheCorde) {
       this.vy = 0;
       this.enChute = false;
+
+      this.alignerSurCorde();
+      
       return;
     }
 
