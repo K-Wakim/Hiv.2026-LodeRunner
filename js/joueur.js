@@ -101,7 +101,9 @@ export class Joueur {
   }
 
   estSurSolide() {
-    return estSolide(this.getCellDessous()) || estEchelle(this.getCellDessous());
+    return (
+      estSolide(this.getCellDessous()) || estEchelle(this.getCellDessous())
+    );
   }
 
   // ---- Snaps ----
@@ -114,8 +116,14 @@ export class Joueur {
     this.y = row * TAILLE_CELLULE;
   }
 
+  peutControler() {
+    return !this.enChute;
+  }
+
   // ---- Mouvement horizontal ----
   deplacementHorizontal(direction) {
+    if (this.enChute) return;
+
     const nX = this.x + direction * this.vitesse;
 
     // On teste la tuile au niveau du centre (un test simple)
@@ -133,6 +141,8 @@ export class Joueur {
 
   // ---- Monter / Descendre échelle ----
   monterEchelle() {
+    if (this.enChute) return;
+
     const col = this.col;
     const row = this.row;
 
@@ -164,6 +174,8 @@ export class Joueur {
   }
 
   descendreEchelle() {
+    if (this.enChute) return;
+
     const col = this.col;
     const row = this.row;
 
@@ -190,6 +202,8 @@ export class Joueur {
   }
 
   lacherCorde() {
+    if (this.enChute) return;
+
     if (this.estSurCorde() && !this.estDansEchelle()) {
       this.lacheCorde = true;
 
@@ -200,38 +214,47 @@ export class Joueur {
 
   // ---- Gravité / tomber ----
   appliquerGravite() {
-    // Sur corde: pas de gravité
+    // --- CORDE ---
     if (this.estSurCorde() && !this.lacheCorde) {
       this.vy = 0;
+      this.enChute = false;
       return;
     }
-
     if (!this.estSurCorde()) {
       this.lacheCorde = false;
     }
 
-    // Dans une échelle: pas de gravité
+    // --- ECHELLE ---
+    // Si tu es dans une échelle, tu n'es pas en chute
     if (this.estDansEchelle()) {
       this.vy = 0;
+      this.enChute = false;
       return;
     }
 
-    // Si pas supporté => chute
-    if (!this.estSurSolide()) {
-      this.vy += this.gravite;
-      this.y += this.vy;
-
-      // collision avec sol
-      const col = this.col;
+    // --- SUPPORT (solide OU échelle sous les pieds) ---
+    if (this.estSurSolide()) {
       const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
-      const tSous = cellule(this.niveau, col, rowSous);
-
-      if (estSolide(tSous)) {
-        this.y = rowSous * TAILLE_CELLULE - this.h;
-        this.vy = 0;
-      }
-    } else {
+      this.y = rowSous * TAILLE_CELLULE - this.h; // snap parfait (plus de 1px)
       this.vy = 0;
+      this.enChute = false;
+      return;
+    }
+
+    // --- CHUTE ---
+    this.enChute = true;
+    this.vy += this.gravite;
+    this.y += this.vy;
+
+    // Collision avec support pendant la chute (solide OU échelle)
+    const col = this.col;
+    const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+    const tSous = cellule(this.niveau, col, rowSous);
+
+    if (estSolide(tSous) || estEchelle(tSous)) {
+      this.y = rowSous * TAILLE_CELLULE - this.h;
+      this.vy = 0;
+      this.enChute = false;
     }
   }
 
