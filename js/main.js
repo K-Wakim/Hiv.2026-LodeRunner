@@ -20,7 +20,7 @@ const objLingot = new Image();
 objLingot.src = "assets/images/lingot.png";
 
 // Joueur
-const joueur = new Joueur(niv1, 2, 1, "assets/images/imgJoueur/BaseRunner.png");
+const joueur = new Joueur(niv1, 14, 14, "assets/images/imgJoueur/BaseRunner.png");
 
 // Input
 input(canvas);
