@@ -44,6 +44,8 @@ export class Joueur {
     this.vy = 0;
     this.vitesse = 2; // ajuste si tu veux
     this.gravite = 0.8;
+    this.lacheCorde = false;
+    this.enChute = false;
 
     // Image du joueur
     this.img = new Image();
@@ -187,12 +189,25 @@ export class Joueur {
     }
   }
 
+  lacherCorde() {
+    if (this.estSurCorde() && !this.estDansEchelle()) {
+      this.lacheCorde = true;
+
+      this.y += 2;
+      this.vy = 0;
+    }
+  }
+
   // ---- Gravité / tomber ----
   appliquerGravite() {
     // Sur corde: pas de gravité
-    if (this.estSurCorde()) {
+    if (this.estSurCorde() && !this.lacheCorde) {
       this.vy = 0;
       return;
+    }
+
+    if (!this.estSurCorde()) {
+      this.lacheCorde = false;
     }
 
     // Dans une échelle: pas de gravité

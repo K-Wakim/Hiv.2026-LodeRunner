@@ -56,6 +56,7 @@ function update() {
   if (keys.left) joueur.deplacementHorizontal(-1);
   if (keys.right) joueur.deplacementHorizontal(1);
   if (keys.up) joueur.monterEchelle();
+  if (keys.down) joueur.lacherCorde();
   if (keys.down) joueur.descendreEchelle();
 
   // Gravité/tomber
