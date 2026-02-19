@@ -19,6 +19,7 @@ import {
 
 import { Joueur } from "./joueur.js";
 import { input, keys } from "./input.js";
+import { rammasseLingot } from "./actions.js";
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -73,12 +74,6 @@ function redessiner() {
 }
 
 function update() {
-  console.log(
-    joueur.col,
-    joueur.row,
-    joueur.getCellCourante(),
-    joueur.getCellDessous(),
-  );
   if (keys.left) joueur.deplacementHorizontal(-1);
   if (keys.right) joueur.deplacementHorizontal(1);
   if (keys.up) joueur.monterEchelle();
@@ -86,6 +81,7 @@ function update() {
 
   // Gravité/tomber
   joueur.appliquerGravite();
+  joueur.ramasserLingot();
 
   redessiner();
 }

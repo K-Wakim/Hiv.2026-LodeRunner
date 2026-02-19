@@ -32,6 +32,7 @@ export class Joueur {
     srcImage = "assets/images/imgJoueur/BaseRunner.png",
   ) {
     this.niveau = niveau;
+    this.nbrLingots = 0;
 
     // Position en pixels (zone jouable)
     this.x = colDepart * TAILLE_CELLULE;
@@ -217,6 +218,18 @@ export class Joueur {
       }
     } else {
       this.vy = 0;
+    }
+  }
+
+  // ---- Ramasser lingot ----
+  ramasserLingot() {
+    const col = this.col;
+    const row = this.row;
+    const t = cellule(this.niveau, col, row);
+    if (t === "L") {
+      // Ramasser le lingot: remplacer la tuile par du vide
+      this.niveau[row][col] = "_";
+      this.nbrLingots++;
     }
   }
 
