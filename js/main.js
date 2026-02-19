@@ -19,7 +19,6 @@ import {
 
 import { Joueur } from "./joueur.js";
 import { input, keys } from "./input.js";
-import { rammasseLingot } from "./actions.js";
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
