@@ -117,7 +117,10 @@ export class Joueur {
     const nX = this.x + direction * this.vitesse;
 
     // On teste la tuile au niveau du centre (un test simple)
-    const nCol = Math.floor((nX + this.w / 2) / TAILLE_CELLULE);
+    const nCol =
+      direction === -1
+        ? Math.floor((nX + this.w / 2 - 16) / TAILLE_CELLULE)
+        : Math.floor((nX + this.w / 2 + 16) / TAILLE_CELLULE);
     const nRow = this.row;
     const tDest = cellule(this.niveau, nCol, nRow);
 
