@@ -2,6 +2,7 @@
 
 const TAILLE_CELLULE = 32;
 const OFFSET_BORDURE = 32; // Pour la bordure (lineWidth 64 => 32px dedans)
+const CORDE_OFFSET = 4;
 
 // Cellules
 const SOLIDE = new Set(["B", "Be"]); // Brique, Béton
@@ -43,8 +44,11 @@ export class Joueur {
 
     // Physique
     this.vy = 0;
-    this.vitesse = 2; // ajuste si tu veux
+    this.vitesse = 2;
     this.gravite = 0.8;
+    this.lacheCorde = false;
+    this.enChute = false;
+    this.colEchelleSortie = null; // test
 
     // Image du joueur
     this.img = new Image();
@@ -100,7 +104,20 @@ export class Joueur {
   }
 
   estSurSolide() {
-    return estSolide(this.getCellDessous());
+    // rangée sous les pieds
+    const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+
+    // Colonnes que le joueur chevauche (pieds)
+    const colG = Math.floor((this.x + 1) / TAILLE_CELLULE);
+    const colD = Math.floor((this.x + this.w - 2) / TAILLE_CELLULE);
+
+    // Si au moins une des cellules sous les pieds est support -> supporté
+    for (let c = colG; c <= colD; c++) {
+      const t = cellule(this.niveau, c, rowSous);
+      if (estSolide(t) || estEchelle(t)) return true;
+    }
+
+    return false;
   }
 
   // ---- Snaps ----
@@ -113,8 +130,47 @@ export class Joueur {
     this.y = row * TAILLE_CELLULE;
   }
 
+  peutControler() {
+    return !this.enChute;
+  }
+
+  // retourne vrai si le rectangle du joueur chevauche la colonne "col"
+  chevaucheColonne(col) {
+    const joueurG = this.x;
+    const joueurD = this.x + this.w;
+
+    const colG = col * TAILLE_CELLULE;
+    const colD = colG + TAILLE_CELLULE;
+
+    // chevauchement strict
+    return joueurD > colG && joueurG < colD;
+  }
+
+  // y (centre) -> tuile à la colonne d'échelle qu'on quitte
+  tuileEchelleAColonne(col) {
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const row = Math.floor(cy / TAILLE_CELLULE);
+    return cellule(this.niveau, col, row);
+  }
+
+  alignerSurCorde() {
+    const row = this.row;
+    const yCorde = row * TAILLE_CELLULE + CORDE_OFFSET;
+    const AJUSTEMENT_SPRITE = 12;
+
+    this.y = yCorde - AJUSTEMENT_SPRITE;
+  }
+
   // ---- Mouvement horizontal ----
   deplacementHorizontal(direction) {
+    if (this.enChute) return;
+
+    // Avant le move : est-ce qu'on est dans une échelle ?
+    const etaitDansEchelle = this.estDansEchelle();
+    const colEchelleAvant = this.col; // colonne actuelle (si on est sur l'échelle)
+
+    // Tentative de déplacement
     const nX = this.x + direction * this.vitesse;
 
     // On teste la tuile au niveau du centre (un test simple)
@@ -125,13 +181,30 @@ export class Joueur {
     const nRow = this.row;
     const tDest = cellule(this.niveau, nCol, nRow);
 
+    // On bouge si ce n'est pas un bloc solide
     if (!estSolide(tDest)) {
       this.x = nX;
+    }
+
+    // Après le move : est-ce qu'on est dans une échelle ?
+    const estMaintenantDansEchelle = this.estDansEchelle();
+
+    // Gestion "je quitte une échelle horizontalement"
+    if (etaitDansEchelle && !estMaintenantDansEchelle) {
+      // on mémorise la colonne de l'échelle qu'on vient de quitter
+      this.colEchelleSortie = colEchelleAvant;
+    }
+
+    // Si on est (re)dans une échelle, on annule la sortie
+    if (estMaintenantDansEchelle) {
+      this.colEchelleSortie = null;
     }
   }
 
   // ---- Monter / Descendre échelle ----
   monterEchelle() {
+    if (this.enChute) return;
+
     const col = this.col;
     const row = this.row;
 
@@ -163,6 +236,8 @@ export class Joueur {
   }
 
   descendreEchelle() {
+    if (this.enChute) return;
+
     const col = this.col;
     const row = this.row;
 
@@ -188,36 +263,83 @@ export class Joueur {
     }
   }
 
+  lacherCorde() {
+    if (this.enChute) return;
+
+    if (this.estSurCorde() && !this.estDansEchelle()) {
+      this.lacheCorde = true;
+
+      this.y += 2;
+      this.vy = 0;
+    }
+  }
+
   // ---- Gravité / tomber ----
   appliquerGravite() {
-    // Sur corde: pas de gravité
-    if (this.estSurCorde()) {
+    // --- CORDE ---
+    // Sur corde: pas de gravité, sauf si on a "lâché"
+    if (this.estSurCorde() && !this.lacheCorde) {
       this.vy = 0;
+      this.enChute = false;
+
+      this.alignerSurCorde();
+      
       return;
     }
 
+    // Dès qu'on n'est plus sur la corde, on reset le flag
+    if (!this.estSurCorde()) {
+      this.lacheCorde = false;
+    }
+
+    // --- ECHELLE ---
     // Dans une échelle: pas de gravité
     if (this.estDansEchelle()) {
       this.vy = 0;
+      this.enChute = false;
+      this.colEchelleSortie = null; // on annule toute sortie en cours
       return;
     }
 
-    // Si pas supporté => chute
-    if (!this.estSurSolide()) {
-      this.vy += this.gravite;
-      this.y += this.vy;
+    // --- SORTIE HORIZONTALE D'ECHELLE (tomber seulement quand complètement dehors) ---
+    // Si on est en train de quitter une échelle, on bloque la chute tant qu'on chevauche encore la colonne
+    if (this.colEchelleSortie !== null) {
+      const t = this.tuileEchelleAColonne(this.colEchelleSortie);
 
-      // collision avec sol
-      const col = this.col;
-      const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
-      const tSous = cellule(this.niveau, col, rowSous);
-
-      if (estSolide(tSous)) {
-        this.y = rowSous * TAILLE_CELLULE - this.h;
+      // Tant qu'il y a une échelle à cette colonne ET que le joueur la chevauche encore => pas de chute
+      if (estEchelle(t) && this.chevaucheColonne(this.colEchelleSortie)) {
         this.vy = 0;
+        this.enChute = false;
+        return;
       }
-    } else {
+
+      // Complètement sorti -> on laisse la gravité reprendre
+      this.colEchelleSortie = null;
+    }
+
+    // --- SUPPORT (solide OU échelle sous les pieds) ---
+    if (this.estSurSolide()) {
+      const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+      this.y = rowSous * TAILLE_CELLULE - this.h; // snap
       this.vy = 0;
+      this.enChute = false;
+      return;
+    }
+
+    // --- CHUTE ---
+    this.enChute = true;
+    this.vy += this.gravite;
+    this.y += this.vy;
+
+    // Collision avec support pendant la chute (solide OU échelle)
+    const col = this.col;
+    const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+    const tSous = cellule(this.niveau, col, rowSous);
+
+    if (estSolide(tSous) || estEchelle(tSous)) {
+      this.y = rowSous * TAILLE_CELLULE - this.h;
+      this.vy = 0;
+      this.enChute = false;
     }
   }
 
