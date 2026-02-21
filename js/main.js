@@ -83,6 +83,8 @@ function update() {
   joueur.appliquerGravite();
   joueur.ramasserLingot();
 
+  joueur.mettreAJourAnimation(keys);
+
   redessiner();
 }
 

@@ -50,12 +50,21 @@ export class Joueur {
     this.enChute = false;
     this.colEchelleSortie = null; // test
 
-    // Image du joueur
-    this.img = new Image();
-    this.imgOK = false;
-    this.img.onload = () => (this.imgOK = true);
-    this.img.onerror = () => (this.imgOK = false);
-    this.img.src = srcImage;
+    // --- Animation ---
+    this.dir = "droite"; // Direction droite ou gauche
+    this.etat = "idle"; // idle, run, climb, rope, fall
+    this.animIndex = 0;
+    this.animTimer = 0;
+    this.animDelay = 8;
+
+    // Preload les sprites
+    this.sprites = this.chargerSprites();
+
+    // Image courrante
+    this.img = this.sprites.idle;
+    this.imgOK = true;
+    this.img.onload = () => {};
+    this.img.onerror = () => {};
   }
 
   // ---- Centre / grille ----
@@ -160,6 +169,111 @@ export class Joueur {
     const AJUSTEMENT_SPRITE = 12;
 
     this.y = yCorde - AJUSTEMENT_SPRITE;
+  }
+
+  // --- Chargements des sprites ---
+  chargerImage(src) {
+    const img = new Image();
+    img.src = src;
+    return img;
+  }
+
+  chargerSprites() {
+    const basePath = "assets/images/imgJoueur/";
+
+    return {
+      idle: this.chargerImage(basePath + "BaseRunner.png"),
+
+      runRight: [
+        this.chargerImage(basePath + "RunnerDroite1.png"),
+        this.chargerImage(basePath + "RunnerDroite2.png"),
+        this.chargerImage(basePath + "RunnerDroite3.png"),
+      ],
+
+      runLeft: [
+        this.chargerImage(basePath + "RunnerGauche1.png"),
+        this.chargerImage(basePath + "RunnerGauche2.png"),
+        this.chargerImage(basePath + "RunnerGauche3.png"),
+      ],
+
+      climb: [
+        this.chargerImage(basePath + "RunnerEchelle1.png"),
+        this.chargerImage(basePath + "RunnerEchelle2.png"),
+      ],
+
+      ropeRight: [
+        this.chargerImage(basePath + "RunnerCordeDroite1.png"),
+        this.chargerImage(basePath + "RunnerCordeDroite2.png"),
+        this.chargerImage(basePath + "RunnerCordeDroite3.png"),
+      ],
+      ropeLeft: [
+        this.chargerImage(basePath + "RunnerCordeGauche1.png"),
+        this.chargerImage(basePath + "RunnerCordeGauche2.png"),
+        this.chargerImage(basePath + "RunnerCordeGauche3.png"),
+      ],
+
+      fall: [
+        this.chargerImage(basePath + "RunnerDrop1.png"),
+        this.chargerImage(basePath + "RunnerDrop2.png"),
+      ],
+    };
+  }
+
+  // ---- Mise à jour de l'état et de l'animation ----
+  setEtat(nouvelEtat) {
+    if (this.etat !== nouvelEtat) {
+      this.etat = nouvelEtat;
+      this.animIndex = 0;
+      this.animTimer = 0;
+    }
+  }
+
+  mettreAJourAnimation(keys) {
+    // Direction
+    if (keys.left) this.dir = "gauche";
+    else if (keys.right) this.dir = "droite";
+
+    // État
+    if (this.enChute) {
+      this.setEtat("fall");
+    } else if (this.estSurCorde()) {
+      this.setEtat("rope");
+    } else if (this.estDansEchelle()) {
+      this.setEtat("climb");
+    } else if (keys.left || keys.right) {
+      this.setEtat("run");
+    } else {
+      this.setEtat("idle");
+    }
+
+    let frames = null;
+
+    if (this.etat === "idle") {
+      this.img = this.sprites.idle;
+      return;
+    }
+
+    if (this.etat === "run") {
+      frames = this.dir === "gauche" ? this.sprites.runLeft : this.sprites.runRight;
+      this.animDelay = 6;
+    } else if (this.etat === "climb") {
+      frames = this.sprites.climb;
+      this.animDelay = 10;
+    } else if (this.etat === "rope") {
+      frames = this.dir === "gauche" ? this.sprites.ropeLeft : this.sprites.ropeRight;
+      this.animDelay = 8;
+    } else if (this.etat === "fall") {
+      frames = this.sprites.fall;
+      this.animDelay = 10;
+    }
+
+    this.animTimer++;
+    if (this.animTimer >= this.animDelay) {
+      this.animTimer = 0;
+      this.animIndex = (this.animIndex + 1) % frames.length;
+    }
+
+    this.img = frames[this.animIndex];
   }
 
   // ---- Mouvement horizontal ----
@@ -283,7 +397,7 @@ export class Joueur {
       this.enChute = false;
 
       this.alignerSurCorde();
-      
+
       return;
     }
 
