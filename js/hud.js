@@ -2,6 +2,8 @@
  * LIBRAIRIE DE FONCTIONS DE DESSIN POUR LE HUD
  */
 
+const OFFSET_BORDURE = 32;
+
 function dessinerBordure(canvas, ctx) {
   ctx.strokeStyle = "yellow";
   ctx.lineWidth = 64;
@@ -40,12 +42,12 @@ function dessinerScore(ctx, canvas, score = 0) {
   ctx.strokeText(
     `Score: ${String(score).padStart(4, "0")}`,
     canvas.width / 4 - 50,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
   ctx.fillText(
     `Score: ${String(score).padStart(4, "0")}`,
     canvas.width / 4 - 50,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
 }
 
@@ -59,12 +61,12 @@ function dessinerTemps(ctx, canvas, temps = "00:00") {
   ctx.strokeText(
     `Temps: ${String(temps)}`,
     canvas.width / 2 - 50,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
   ctx.fillText(
     `Temps: ${String(temps)}`,
     canvas.width / 2 - 50,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
 }
 
@@ -78,12 +80,12 @@ function dessinerNiveauCourant(ctx, canvas, niveau = 1) {
   ctx.strokeText(
     `Niveau: ${String(niveau)}`,
     canvas.width / 2 + 175,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
   ctx.fillText(
     `Niveau: ${String(niveau)}`,
     canvas.width / 2 + 175,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
 }
 
@@ -97,12 +99,12 @@ function dessinerVie(ctx, canvas, vie = 5) {
   ctx.strokeText(
     `Vie: ${String(vie)}`,
     canvas.width / 2 + 325,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
   ctx.fillText(
     `Vie: ${String(vie)}`,
     canvas.width / 2 + 325,
-    canvas.height - 100,
+    canvas.height - 100 + OFFSET_BORDURE,
   );
 }
 

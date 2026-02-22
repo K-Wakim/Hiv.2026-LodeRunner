@@ -10,6 +10,7 @@ const ECHELLE = "E";
 const CORDE = "C";
 
 const VIE = 5;
+const SCORE = 0;
 
 function cellule(niveau, col, row) {
   if (row < 0 || row >= niveau.length) return "Be"; // Mur
@@ -39,6 +40,8 @@ export class Joueur {
 
     this.nbrLingots = 0;
     this._vie = VIE;
+    this._score = SCORE;
+    this._scoreInit = SCORE;
 
     // Position en pixels (zone jouable)
     this.x = colDepart * TAILLE_CELLULE;
@@ -88,6 +91,22 @@ export class Joueur {
 
   set vie(v) {
     this._vie = v;
+  }
+
+  get score() {
+    return this._score;
+  }
+
+  set score(s) {
+    this._score = s;
+  }
+
+  get scoreInit() {
+    return this._scoreInit;
+  }
+
+  set scoreInit(s) {
+    this._scoreInit = s;
   }
 
   // tuile à partir d'un pixel (zone jouable, sans OFFSET)
@@ -283,7 +302,8 @@ export class Joueur {
     }
 
     if (this.etat === "run") {
-      frames = this.dir === "gauche" ? this.sprites.runLeft : this.sprites.runRight;
+      frames =
+        this.dir === "gauche" ? this.sprites.runLeft : this.sprites.runRight;
       this.animDelay = 6;
       doitAnimer = bougeH;
     } else if (this.etat === "climb") {
@@ -291,7 +311,8 @@ export class Joueur {
       this.animDelay = 10;
       doitAnimer = bougeV;
     } else if (this.etat === "rope") {
-      frames = this.dir === "gauche" ? this.sprites.ropeLeft : this.sprites.ropeRight;
+      frames =
+        this.dir === "gauche" ? this.sprites.ropeLeft : this.sprites.ropeRight;
       this.animDelay = 8;
       doitAnimer = bougeH;
     } else if (this.etat === "fall") {
@@ -320,7 +341,7 @@ export class Joueur {
 
     const grimpe = keys && (keys.up || keys.down);
 
-    if (grimpe && this.estDansEchelle() && (this.x % TAILLE_CELLULE) !== 0) {
+    if (grimpe && this.estDansEchelle() && this.x % TAILLE_CELLULE !== 0) {
       return;
     }
 
@@ -518,6 +539,7 @@ export class Joueur {
       // Ramasser le lingot: remplacer la tuile par du vide
       this.niveau[row][col] = "_";
       this.nbrLingots++;
+      this.score += 250;
     }
   }
 
@@ -540,6 +562,7 @@ export class Joueur {
   death() {
     if (cellule(this.niveau, this.col, this.row) === "B") {
       this.vie = VIE - 1;
+      this.score = this.scoreInit;
       this.x = 14 * TAILLE_CELLULE;
       this.y = 14 * TAILLE_CELLULE;
       this.niveau = this.niveauInit.map((row) => [...row]); // reset du niveau
@@ -549,7 +572,7 @@ export class Joueur {
   // ---- Dessin ----
   dessiner(ctx) {
     const dessineX = this.x + OFFSET_BORDURE;
-    const dessineY = this.y;
+    const dessineY = this.y + OFFSET_BORDURE;
 
     if (this.imgOK && this.img.complete && this.img.naturalWidth > 0) {
       ctx.drawImage(this.img, dessineX, dessineY, this.w, this.h);

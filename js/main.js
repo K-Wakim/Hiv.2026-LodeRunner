@@ -44,24 +44,24 @@ function dessinerNiveau() {
   dessinerBordure(canvas, ctx);
   dessinerTitre(ctx, canvas);
   dessinerNoms(ctx, canvas);
-  dessinerScore(ctx, canvas);
+  dessinerScore(ctx, canvas, joueur.score);
   dessinerTemps(ctx, canvas);
   dessinerNiveauCourant(ctx, canvas);
   dessinerVie(ctx, canvas, joueur.vie);
 
   joueur.niveau.forEach((ligne, y) => {
     ligne.forEach((caseType, x) => {
-      if (caseType === "Be") dessinerBeton(ctx, x * 32, y * 32);
-      if (caseType === "B") dessinerBrique(ctx, x * 32, y * 32);
-      if (caseType === "C") dessinerCorde(ctx, x * 32, y * 32);
+      if (caseType === "Be") dessinerBeton(ctx, x * 32, y * 32 + 32);
+      if (caseType === "B") dessinerBrique(ctx, x * 32, y * 32 + 32);
+      if (caseType === "C") dessinerCorde(ctx, x * 32, y * 32 + 32);
       if (caseType === "L" && objLingot.complete)
-        dessinerLingot(ctx, x * 32, y * 32, objLingot);
+        dessinerLingot(ctx, x * 32, y * 32 + 32, objLingot);
     });
   });
 
   joueur.niveau.forEach((ligne, y) => {
     ligne.forEach((caseType, x) => {
-      if (caseType === "E") dessinerEchelle(ctx, x * 32, y * 32);
+      if (caseType === "E") dessinerEchelle(ctx, x * 32, y * 32 + 32);
     });
   });
 }
