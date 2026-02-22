@@ -561,7 +561,7 @@ export class Joueur {
   // ---- Mort ----
   death() {
     if (cellule(this.niveau, this.col, this.row) === "B") {
-      this.vie = VIE - 1;
+      this.vie = this._vie - 1;
       this.score = this.scoreInit;
       this.x = 14 * TAILLE_CELLULE;
       this.y = 14 * TAILLE_CELLULE;
