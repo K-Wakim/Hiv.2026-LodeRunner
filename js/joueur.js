@@ -45,7 +45,7 @@ export class Joueur {
     // Physique
     this.vy = 0;
     this.vitesse = 2;
-    this.gravite = 0.8;
+    this.gravite = 0.3;
     this.lacheCorde = false;
     this.enChute = false;
     this.colEchelleSortie = null; // test
@@ -53,6 +53,7 @@ export class Joueur {
     // --- Animation ---
     this.dir = "droite"; // Direction droite ou gauche
     this.etat = "idle"; // idle, run, climb, rope, fall
+    this.forceIdle = false;
     this.animIndex = 0;
     this.animTimer = 0;
     this.animDelay = 8;
@@ -166,7 +167,7 @@ export class Joueur {
   alignerSurCorde() {
     const row = this.row;
     const yCorde = row * TAILLE_CELLULE + CORDE_OFFSET;
-    const AJUSTEMENT_SPRITE = 12;
+    const AJUSTEMENT_SPRITE = 8;
 
     this.y = yCorde - AJUSTEMENT_SPRITE;
   }
@@ -233,20 +234,35 @@ export class Joueur {
     if (keys.left) this.dir = "gauche";
     else if (keys.right) this.dir = "droite";
 
+    // Helpers
+    const surCorde = this.estSurCorde() && !this.lacheCorde;
+    const dansEchelle = this.estDansEchelle();
+    const bougeH = keys.left || keys.right;
+    const bougeV = keys.up || keys.down;
+
     // État
     if (this.enChute) {
       this.setEtat("fall");
-    } else if (this.estSurCorde()) {
+    } else if (surCorde) {
       this.setEtat("rope");
-    } else if (this.estDansEchelle()) {
+    } else if (dansEchelle && bougeV) {
       this.setEtat("climb");
-    } else if (keys.left || keys.right) {
+    } else if (bougeH) {
       this.setEtat("run");
     } else {
-      this.setEtat("idle");
+      if (this.forceIdle) {
+        this.forceIdle = false;
+        this.setEtat("idle");
+        this.animIndex = 0;
+        this.animTimer = 0;
+        this.img = this.sprites.idle;
+      }
+      return;
     }
 
+    // Choisit les frames selon l'état
     let frames = null;
+    let doitAnimer = true;
 
     if (this.etat === "idle") {
       this.img = this.sprites.idle;
@@ -256,15 +272,24 @@ export class Joueur {
     if (this.etat === "run") {
       frames = this.dir === "gauche" ? this.sprites.runLeft : this.sprites.runRight;
       this.animDelay = 6;
+      doitAnimer = bougeH;
     } else if (this.etat === "climb") {
       frames = this.sprites.climb;
       this.animDelay = 10;
+      doitAnimer = bougeV;
     } else if (this.etat === "rope") {
       frames = this.dir === "gauche" ? this.sprites.ropeLeft : this.sprites.ropeRight;
       this.animDelay = 8;
+      doitAnimer = bougeH;
     } else if (this.etat === "fall") {
       frames = this.sprites.fall;
       this.animDelay = 10;
+      doitAnimer = true;
+    }
+
+    if (!doitAnimer) {
+      this.img = frames[this.animIndex % frames.length];
+      return;
     }
 
     this.animTimer++;
@@ -277,8 +302,14 @@ export class Joueur {
   }
 
   // ---- Mouvement horizontal ----
-  deplacementHorizontal(direction) {
+  deplacementHorizontal(direction, keys = null) {
     if (this.enChute) return;
+
+    const grimpe = keys && (keys.up || keys.down);
+
+    if (grimpe && this.estDansEchelle() && (this.x % TAILLE_CELLULE) !== 0) {
+      return;
+    }
 
     // Avant le move : est-ce qu'on est dans une échelle ?
     const etaitDansEchelle = this.estDansEchelle();
@@ -346,6 +377,7 @@ export class Joueur {
       // Snap sur la rangée la plus proche (évite rester entre 2 cases)
       const r = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
       this.snapYSurRangee(r);
+      this.forceIdle = true;
     }
   }
 
@@ -374,6 +406,7 @@ export class Joueur {
 
     if (estSolide(tSous)) {
       this.y = rowPieds * TAILLE_CELLULE - this.h;
+      this.forceIdle = true;
     }
   }
 
@@ -454,6 +487,12 @@ export class Joueur {
       this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
+
+      // Force idle après chute
+      this.setEtat("idle");
+      this.animIndex = 0;
+      this.animTimer = 0;
+      this.img = this.sprites.idle;
     }
   }
 
