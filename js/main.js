@@ -93,6 +93,8 @@ function update() {
     joueur.niveau[3][18] = "E";
   }
 
+  joueur.mettreAJourAnimation(keys);
+  
   redessiner();
 }
 
