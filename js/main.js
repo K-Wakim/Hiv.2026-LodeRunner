@@ -80,7 +80,15 @@ function update() {
 
   // Gravité/tomber
   joueur.appliquerGravite();
+
   joueur.ramasserLingot();
+
+  // échelle pour passer au prochaine niveau
+  if (joueur.nbrLingots === 6) {
+    niv1[1][18] = "E";
+    niv1[2][18] = "E";
+    niv1[3][18] = "E";
+  }
 
   redessiner();
 }
