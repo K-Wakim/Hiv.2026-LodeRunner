@@ -98,10 +98,58 @@ function dessinerLingot(ctx, x, y, objLingot) {
   ctx.drawImage(objLingot, x, y, 32, 32);
 }
 
+// --- GAME SCREENS ---
+function spinTitre(ctx, canvas, texte, temps) {
+
+  // Fond semi-transparent
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const angle = (temps / 1000) * 2.5;
+
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+
+  ctx.textAlign = "center";
+  ctx.textBaseLine = "middle";
+  ctx.font = "bold 72px Arial";
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = "white";
+  ctx.strokeText(texte, 0, 0);
+  ctx.fillStyle = "yellow";
+  ctx.fillText(texte, 0, 0);
+
+  ctx.restore();
+
+  /*
+  ctx.save()
+  ctx.textAlign = "center";
+  ctx.textBaseLine = "top";
+  ctx.font = "bold 22px Arial";
+  ctx.fillStyle = "white";
+  ctx.fillText("Appuie sur R pour recommencer", centerX, centerY + 60);
+  ctx.restore();
+  */
+}
+
+function dessinerGameOver(ctx, canvas, temps) {
+  spinTitre(ctx, canvas, "GAME OVER", temps);
+}
+
+function dessinerVictoire(ctx, canvas, temps) {
+  spinTitre(ctx, canvas, "VICTOIRE !", temps);
+}
+
 export {
   dessinerBeton,
   dessinerBrique,
   dessinerEchelle,
   dessinerCorde,
   dessinerLingot,
+
+  dessinerGameOver,
+  dessinerVictoire,
 };

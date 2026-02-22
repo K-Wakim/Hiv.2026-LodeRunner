@@ -5,6 +5,8 @@ import {
   dessinerEchelle,
   dessinerCorde,
   dessinerLingot,
+  dessinerGameOver,
+  dessinerVictoire,
 } from "./dessiner.js";
 
 import {
@@ -23,6 +25,9 @@ import { input, keys } from "./input.js";
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 canvas.focus(); // Pour que le canvas detecte les événements clavier
+
+let etatJeu = "play";
+let tempsFin = 0;
 
 // Images
 const objLingot = new Image();
@@ -73,6 +78,34 @@ function redessiner() {
 }
 
 function update() {
+  if (etatJeu !== "play") {
+    const t = performance.now() - tempsFin;
+    redessiner();
+    if (etatJeu === "gameover") dessinerGameOver(ctx, canvas, t);
+    if (etatJeu === "win") dessinerVictoire(ctx, canvas, t);
+    return;
+  }
+
+  if (joueur.vie <= 0) {
+    etatJeu = "gameover";
+    tempsFin = performance.now();
+    return;
+  }
+
+  /*
+  // Conditions de victoire
+  if (jeu.win) {
+    etatJeu = "win";
+    tempsFin = performance.now();
+    return;
+  }
+  */
+
+  // Resart 
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "r" || e.key === "R") location.reload();
+  })
+
   if (keys.left) joueur.deplacementHorizontal(-1, keys);
   if (keys.right) joueur.deplacementHorizontal(1, keys);
   if (keys.up) joueur.monterEchelle();
@@ -94,7 +127,7 @@ function update() {
   }
 
   joueur.mettreAJourAnimation(keys);
-  
+
   redessiner();
 }
 
