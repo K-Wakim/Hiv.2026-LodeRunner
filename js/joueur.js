@@ -233,6 +233,20 @@ export class Joueur {
     }
   }
 
+  // ---- Détruire brique ----
+  detruitBrique(gauche) {
+    const col = this.col + (gauche ? -1 : 1); // Côté vers lequel on se déplace
+    const row = this.row + 1; // Brique sous les pieds
+    const t = cellule(this.niveau, col, row);
+    if (t === "B") {
+      // Détruire la brique: remplacer la tuile par du vide
+      this.niveau[row][col] = "_";
+      setTimeout(() => {
+        this.niveau[row][col] = "B";
+      }, 8000);
+    }
+  }
+
   // ---- Dessin ----
   dessiner(ctx) {
     const dessineX = this.x + OFFSET_BORDURE;

@@ -37,7 +37,7 @@ const joueur = new Joueur(
 );
 
 // Input
-input(canvas);
+input(canvas, joueur);
 
 // Dessiner le niveau
 function dessinerNiveau() {
