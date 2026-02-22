@@ -37,7 +37,7 @@ const joueur = new Joueur(
 );
 
 // Input
-input(canvas);
+input(canvas, joueur);
 
 // Dessiner le niveau
 function dessinerNiveau() {
@@ -47,9 +47,9 @@ function dessinerNiveau() {
   dessinerScore(ctx, canvas);
   dessinerTemps(ctx, canvas);
   dessinerNiveauCourant(ctx, canvas);
-  dessinerVie(ctx, canvas);
+  dessinerVie(ctx, canvas, joueur.vie);
 
-  niv1.forEach((ligne, y) => {
+  joueur.niveau.forEach((ligne, y) => {
     ligne.forEach((caseType, x) => {
       if (caseType === "Be") dessinerBeton(ctx, x * 32, y * 32);
       if (caseType === "B") dessinerBrique(ctx, x * 32, y * 32);
@@ -59,7 +59,7 @@ function dessinerNiveau() {
     });
   });
 
-  niv1.forEach((ligne, y) => {
+  joueur.niveau.forEach((ligne, y) => {
     ligne.forEach((caseType, x) => {
       if (caseType === "E") dessinerEchelle(ctx, x * 32, y * 32);
     });
@@ -81,9 +81,17 @@ function update() {
 
   // Gravité/tomber
   joueur.appliquerGravite();
+
   joueur.ramasserLingot();
 
-  joueur.mettreAJourAnimation(keys);
+  joueur.death();
+
+  // échelle pour passer au prochaine niveau
+  if (joueur.nbrLingots === 6) {
+    niv1[1][18] = "E";
+    niv1[2][18] = "E";
+    niv1[3][18] = "E";
+  }
 
   redessiner();
 }

@@ -13,10 +13,10 @@
 
 ## 2. Player
 
-    2.1 Movement
+    ~2.1 Movement~
     2.2 Animation
-    2.3 Destruction
-    2.4 Pickup
+    ~2.3 Destruction~
+    ~2.4 Pickup~
     2.5 Death
     2.6 Spawn
 

@@ -9,6 +9,8 @@ const SOLIDE = new Set(["B", "Be"]); // Brique, Béton
 const ECHELLE = "E";
 const CORDE = "C";
 
+const VIE = 5;
+
 function cellule(niveau, col, row) {
   if (row < 0 || row >= niveau.length) return "Be"; // Mur
   if (col < 0 || col >= niveau[0].length) return "Be";
@@ -32,8 +34,11 @@ export class Joueur {
     rowDepart = 1,
     srcImage = "assets/images/imgJoueur/BaseRunner.png",
   ) {
-    this.niveau = niveau;
+    this.niveau = niveau.map((row) => [...row]);
+    this.niveauInit = niveau.map((row) => [...row]); // clone pour reset
+
     this.nbrLingots = 0;
+    this._vie = VIE;
 
     // Position en pixels (zone jouable)
     this.x = colDepart * TAILLE_CELLULE;
@@ -75,6 +80,14 @@ export class Joueur {
 
   get row() {
     return Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
+  }
+
+  get vie() {
+    return this._vie;
+  }
+
+  set vie(v) {
+    this._vie = v;
   }
 
   // tuile à partir d'un pixel (zone jouable, sans OFFSET)
@@ -505,6 +518,31 @@ export class Joueur {
       // Ramasser le lingot: remplacer la tuile par du vide
       this.niveau[row][col] = "_";
       this.nbrLingots++;
+    }
+  }
+
+  // ---- Détruire brique ----
+  detruitBrique(gauche) {
+    const col = this.col + (gauche ? -1 : 1); // Côté vers lequel on se déplace
+    const row = this.row + 1; // Brique sous les pieds
+    const t = cellule(this.niveau, col, row);
+    if (t === "B") {
+      // Détruire la brique: remplacer la tuile par du vide
+      this.niveau[row][col] = "_";
+      setTimeout(() => {
+        this.niveau[row][col] = "B";
+      }, 8000);
+    }
+  }
+
+  // A COMPLÉTER
+  // ---- Mort ----
+  death() {
+    if (cellule(this.niveau, this.col, this.row) === "B") {
+      this.vie = VIE - 1;
+      this.x = 14 * TAILLE_CELLULE;
+      this.y = 14 * TAILLE_CELLULE;
+      this.niveau = this.niveauInit.map((row) => [...row]); // reset du niveau
     }
   }
 
