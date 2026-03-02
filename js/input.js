@@ -5,6 +5,7 @@ export const keys = {
   right: false,
   up: false,
   down: false,
+  jouer: false,
 };
 
 export function input(canvas, joueur) {
@@ -15,6 +16,15 @@ export function input(canvas, joueur) {
     if (e.code === "ArrowDown") keys.down = true;
     if (e.code === "KeyX") joueur.detruitBrique(true);
     if (e.code === "KeyC") joueur.detruitBrique(false);
+
+    if (
+      e.code === "ArrowLeft" ||
+      e.code === "ArrowRight" ||
+      e.code === "ArrowUp" ||
+      e.code === "ArrowDown"
+    ) {
+      keys.jouer = true;
+    }
 
     e.preventDefault(); // Empêche le scroll de la page avec les flèches
   });

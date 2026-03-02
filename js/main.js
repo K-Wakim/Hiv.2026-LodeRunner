@@ -15,6 +15,7 @@ import {
   dessinerTitre,
   dessinerNiveauCourant,
   dessinerVie,
+  animerHorloge,
 } from "./hud.js";
 
 import { Joueur } from "./joueur.js";
@@ -36,6 +37,9 @@ const joueur = new Joueur(
   "assets/images/imgJoueur/BaseRunner.png",
 );
 
+let tempsEcoule = "00:00";
+let tempsInitial = null;
+
 // Input
 input(canvas, joueur);
 
@@ -44,24 +48,24 @@ function dessinerNiveau() {
   dessinerBordure(canvas, ctx);
   dessinerTitre(ctx, canvas);
   dessinerNoms(ctx, canvas);
-  dessinerScore(ctx, canvas);
-  dessinerTemps(ctx, canvas);
+  dessinerScore(ctx, canvas, joueur.score);
+  dessinerTemps(ctx, canvas, tempsEcoule);
   dessinerNiveauCourant(ctx, canvas);
   dessinerVie(ctx, canvas, joueur.vie);
 
   joueur.niveau.forEach((ligne, y) => {
     ligne.forEach((caseType, x) => {
-      if (caseType === "Be") dessinerBeton(ctx, x * 32, y * 32);
-      if (caseType === "B") dessinerBrique(ctx, x * 32, y * 32);
-      if (caseType === "C") dessinerCorde(ctx, x * 32, y * 32);
+      if (caseType === "Be") dessinerBeton(ctx, x * 32, y * 32 + 32);
+      if (caseType === "B") dessinerBrique(ctx, x * 32, y * 32 + 32);
+      if (caseType === "C") dessinerCorde(ctx, x * 32, y * 32 + 32);
       if (caseType === "L" && objLingot.complete)
-        dessinerLingot(ctx, x * 32, y * 32, objLingot);
+        dessinerLingot(ctx, x * 32, y * 32 + 32, objLingot);
     });
   });
 
   joueur.niveau.forEach((ligne, y) => {
     ligne.forEach((caseType, x) => {
-      if (caseType === "E") dessinerEchelle(ctx, x * 32, y * 32);
+      if (caseType === "E") dessinerEchelle(ctx, x * 32, y * 32 + 32);
     });
   });
 }
@@ -73,29 +77,38 @@ function redessiner() {
 }
 
 function update() {
-  if (keys.left) joueur.deplacementHorizontal(-1, keys);
-  if (keys.right) joueur.deplacementHorizontal(1, keys);
-  if (keys.up) joueur.monterEchelle();
-  if (keys.down) joueur.lacherCorde();
-  if (keys.down) joueur.descendreEchelle();
+  if (keys.jouer) {
+    if (keys.left) joueur.deplacementHorizontal(-1, keys);
+    if (keys.right) joueur.deplacementHorizontal(1, keys);
+    if (keys.up) joueur.monterEchelle();
+    if (keys.down) joueur.lacherCorde();
+    if (keys.down) joueur.descendreEchelle();
 
-  // Gravité/tomber
-  joueur.appliquerGravite();
+    // Gravité/tomber
+    joueur.appliquerGravite();
 
-  joueur.ramasserLingot();
+    joueur.ramasserLingot();
 
-  joueur.death();
+    joueur.death();
 
-  // échelle pour passer au prochaine niveau
-  if (joueur.nbrLingots === 6) {
-    joueur.niveau[1][18] = "E";
-    joueur.niveau[2][18] = "E";
-    joueur.niveau[3][18] = "E";
+    // échelle pour passer au prochaine niveau
+    if (joueur.nbrLingots === 6) {
+      joueur.niveau[0][18] = "E";
+      joueur.niveau[1][18] = "E";
+      joueur.niveau[2][18] = "E";
+      joueur.niveau[3][18] = "E";
+    }
+
+    if (tempsInitial === null) tempsInitial = Date.now();
+
+    tempsEcoule = animerHorloge(ctx, canvas, tempsInitial);
+
+    joueur.mettreAJourAnimation(keys);
+
+    console.log(joueur.col, joueur.row);
+
+    redessiner();
   }
-
-  joueur.mettreAJourAnimation(keys);
-  
-  redessiner();
 }
 
 objLingot.onload = () => redessiner();
