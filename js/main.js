@@ -92,17 +92,18 @@ function update() {
     return;
   }
 
-  /*
+  
   // Conditions de victoire
-  if (jeu.win) {
+  if (joueur.nbrLingots === 6 && joueur.col === 18 && joueur.row === -1) {
     etatJeu = "win";
     tempsFin = performance.now();
+    console.log("Victoire !");
+    dessinerVictoire(ctx, canvas, 0);
     return;
   }
-  */
 
   // Resart 
-  window.addEventListener("keydown", (e) => {
+  canvas.addEventListener("keydown", (e) => {
     if (e.key === "r" || e.key === "R") location.reload();
   })
 

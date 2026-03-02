@@ -117,14 +117,13 @@ function spinTitre(ctx, canvas, texte, temps) {
   ctx.textBaseLine = "middle";
   ctx.font = "bold 72px Arial";
   ctx.lineWidth = 10;
-  ctx.strokeStyle = "white";
+  ctx.strokeStyle = "black";
   ctx.strokeText(texte, 0, 0);
   ctx.fillStyle = "yellow";
   ctx.fillText(texte, 0, 0);
 
   ctx.restore();
 
-  /*
   ctx.save()
   ctx.textAlign = "center";
   ctx.textBaseLine = "top";
@@ -132,7 +131,6 @@ function spinTitre(ctx, canvas, texte, temps) {
   ctx.fillStyle = "white";
   ctx.fillText("Appuie sur R pour recommencer", centerX, centerY + 60);
   ctx.restore();
-  */
 }
 
 function dessinerGameOver(ctx, canvas, temps) {

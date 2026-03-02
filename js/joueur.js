@@ -9,7 +9,7 @@ const SOLIDE = new Set(["B", "Be"]); // Brique, Béton
 const ECHELLE = "E";
 const CORDE = "C";
 
-const VIE = 5;
+const VIE = 1;
 
 function cellule(niveau, col, row) {
   if (row < 0 || row >= niveau.length) return "Be"; // Mur
@@ -539,7 +539,8 @@ export class Joueur {
   // ---- Mort ----
   death() {
     if (cellule(this.niveau, this.col, this.row) === "B") {
-      this.vie = VIE - 1;
+      this.vie = this._vie - 1;
+      this.score = this.scoreInit;
       this.x = 14 * TAILLE_CELLULE;
       this.y = 14 * TAILLE_CELLULE;
       this.niveau = this.niveauInit.map((row) => [...row]); // reset du niveau
