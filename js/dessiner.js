@@ -114,7 +114,7 @@ function spinTitre(ctx, canvas, texte, temps) {
   ctx.rotate(angle);
 
   ctx.textAlign = "center";
-  ctx.textBaseLine = "middle";
+  ctx.textBaseline = "middle";
   ctx.font = "bold 72px Arial";
   ctx.lineWidth = 10;
   ctx.strokeStyle = "black";
@@ -126,7 +126,7 @@ function spinTitre(ctx, canvas, texte, temps) {
 
   ctx.save()
   ctx.textAlign = "center";
-  ctx.textBaseLine = "top";
+  ctx.textBaseline = "top";
   ctx.font = "bold 22px Arial";
   ctx.fillStyle = "white";
   ctx.fillText("Appuie sur R pour recommencer", centerX, centerY + 60);

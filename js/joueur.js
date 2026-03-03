@@ -34,9 +34,14 @@ export class Joueur {
     colDepart = 1,
     rowDepart = 1,
     srcImage = "assets/images/imgJoueur/BaseRunner.png",
+    sons = null,
   ) {
     this.niveau = niveau.map((row) => [...row]);
     this.niveauInit = niveau.map((row) => [...row]); // clone pour reset
+
+    this.sons = sons;
+    this._tombeDejaJoue = false; // pour éviter de jouer le son de chute à chaque frame
+    this._mortLock = false; 
 
     this.nbrLingots = 0;
     this._vie = VIE;
@@ -462,9 +467,8 @@ export class Joueur {
     if (this.estSurCorde() && !this.lacheCorde) {
       this.vy = 0;
       this.enChute = false;
-
+      this._tombeDejaJoue = false; // reset du son de chute
       this.alignerSurCorde();
-
       return;
     }
 
@@ -478,6 +482,7 @@ export class Joueur {
     if (this.estDansEchelle()) {
       this.vy = 0;
       this.enChute = false;
+      this._tombeDejaJoue = false; // reset du son de chute
       this.colEchelleSortie = null; // on annule toute sortie en cours
       return;
     }
@@ -491,6 +496,7 @@ export class Joueur {
       if (estEchelle(t) && this.chevaucheColonne(this.colEchelleSortie)) {
         this.vy = 0;
         this.enChute = false;
+        this._tombeDejaJoue = false; // reset du son de chute
         return;
       }
 
@@ -504,11 +510,22 @@ export class Joueur {
       this.y = rowSous * TAILLE_CELLULE - this.h; // snap
       this.vy = 0;
       this.enChute = false;
+      this._tombeDejaJoue = false; // reset du son de chute
       return;
     }
 
     // --- CHUTE ---
+    if (!this.enChute) {
+      this._tombeDejaJoue = false; // nouvelle chute
+    }
+
     this.enChute = true;
+
+    if (!this._tombeDejaJoue) {
+      if (this.sons) this.sons.jouer("tombe");
+      this._tombeDejaJoue = true;
+    }
+
     this.vy += this.gravite;
     this.y += this.vy;
 
@@ -521,6 +538,7 @@ export class Joueur {
       this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
+      this._tombeDejaJoue = false; // reset du son de chute
 
       // Force idle après chute
       this.setEtat("idle");
@@ -540,6 +558,8 @@ export class Joueur {
       this.niveau[row][col] = "_";
       this.nbrLingots++;
       this.score += 250;
+
+      if (this.sons) this.sons.jouer("ramasseLingot");
     }
   }
 
@@ -551,8 +571,11 @@ export class Joueur {
     if (t === "B") {
       // Détruire la brique: remplacer la tuile par du vide
       this.niveau[row][col] = "_";
+      if (this.sons) this.sons.jouer("detruitBrique");
+
       setTimeout(() => {
         this.niveau[row][col] = "B";
+        if (this.sons) this.sons.jouer("briqueRespawn");
       }, 8000);
     }
   }
@@ -560,13 +583,26 @@ export class Joueur {
   // A COMPLÉTER
   // ---- Mort ----
   death() {
-    if (cellule(this.niveau, this.col, this.row) === "B") {
-      this.vie = this._vie - 1;
-      this.score = this.scoreInit;
-      this.x = 14 * TAILLE_CELLULE;
-      this.y = 14 * TAILLE_CELLULE;
-      this.niveau = this.niveauInit.map((row) => [...row]); // reset du niveau
+    const surBrique = cellule(this.niveau, this.col, this.row) === "B";
+
+    if (!surBrique) {
+      this._mortLock = false;
+      return;
     }
+
+    if (this._mortLock) return;
+
+    this._mortLock = true;
+
+    if (this.sons) this.sons.jouer("mort");
+
+    this.vie = this.vie - 1;
+    this.score = this.scoreInit;
+
+    this.x = 14 * TAILLE_CELLULE;
+    this.y = 14 * TAILLE_CELLULE;
+
+    this.niveau = this.niveauInit.map((row) => [...row]);
   }
 
   // ---- Dessin ----
