@@ -41,7 +41,7 @@ export class Joueur {
 
     this.sons = sons;
     this._tombeDejaJoue = false; // pour éviter de jouer le son de chute à chaque frame
-    this._mortLock = false; 
+    this._mortLock = false;
 
     this.nbrLingots = 0;
     this._vie = VIE;

@@ -22,6 +22,7 @@ import {
 
 import { Joueur } from "./joueur.js";
 import { input, keys } from "./input.js";
+import { Sons } from "./sons.js";
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -34,12 +35,15 @@ let tempsFin = 0;
 const objLingot = new Image();
 objLingot.src = "assets/images/lingot.png";
 
+const sons = new Sons();
+
 // Joueur
 const joueur = new Joueur(
   niv1,
   14,
   14,
   "assets/images/imgJoueur/BaseRunner.png",
+  sons,
 );
 
 let tempsEcoule = "00:00";
@@ -100,7 +104,6 @@ function update() {
   if (joueur.nbrLingots === 6 && joueur.col === 18 && joueur.row === -1) {
     etatJeu = "win";
     tempsFin = performance.now();
-    console.log("Victoire !");
     dessinerVictoire(ctx, canvas, 0);
     return;
   }
