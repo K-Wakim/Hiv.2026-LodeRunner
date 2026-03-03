@@ -35,6 +35,7 @@ export class Joueur {
     rowDepart = 1,
     srcImage = "assets/images/imgJoueur/BaseRunner.png",
     sons = null,
+    scoreInit = SCORE,
   ) {
     this.niveau = niveau.map((row) => [...row]);
     this.niveauInit = niveau.map((row) => [...row]); // clone pour reset
@@ -45,8 +46,8 @@ export class Joueur {
 
     this.nbrLingots = 0;
     this._vie = VIE;
-    this._score = SCORE;
-    this._scoreInit = SCORE;
+    this._score = scoreInit;
+    this._scoreInit = scoreInit;
 
     // Position en pixels (zone jouable)
     this.x = colDepart * TAILLE_CELLULE;
@@ -165,6 +166,35 @@ export class Joueur {
     }
 
     return false;
+  }
+
+  reset(colDepart = 1, rowDepart = 1, scoreInit = SCORE) {
+    this.niveau = this.niveauInit.map((row) => [...row]);
+
+    this.nbrLingots = 0;
+    this._vie = VIE;
+    this._scoreInit = scoreInit;
+    this._score = scoreInit;
+
+    this.x = colDepart * TAILLE_CELLULE;
+    this.y = rowDepart * TAILLE_CELLULE;
+
+    this.vy = 0;
+    this.lacheCorde = false;
+    this.enChute = false;
+    this.colEchelleSortie = null;
+
+    this._tombeDejaJoue = false;
+    this._mortLock = false;
+
+    this.dir = "droite";
+    this.etat = "idle";
+    this.forceIdle = false;
+    this.animIndex = 0;
+    this.animTimer = 0;
+    this.animDelay = 8;
+
+    this.img = this.sprites.idle;
   }
 
   // ---- Snaps ----

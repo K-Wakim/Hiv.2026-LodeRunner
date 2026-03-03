@@ -31,6 +31,8 @@ canvas.focus(); // Pour que le canvas detecte les événements clavier
 let etatJeu = "play";
 let tempsFin = 0;
 
+let niveauActuel = 1;
+
 // Images
 const objLingot = new Image();
 objLingot.src = "assets/images/lingot.png";
@@ -59,7 +61,7 @@ function dessinerNiveau() {
   dessinerNoms(ctx, canvas);
   dessinerScore(ctx, canvas, joueur.score);
   dessinerTemps(ctx, canvas, tempsEcoule);
-  dessinerNiveauCourant(ctx, canvas);
+  dessinerNiveauCourant(ctx, canvas, String(niveauActuel));
   dessinerVie(ctx, canvas, joueur.vie);
 
   joueur.niveau.forEach((ligne, y) => {
@@ -100,8 +102,25 @@ function update() {
     return;
   }
 
-  // Conditions de victoire
+  // Conditions pour passer au prochain niveau
   if (joueur.nbrLingots === 6 && joueur.col === 18 && joueur.row === -1) {
+    console.log("Niveau terminé !");
+    niveauActuel++;
+    // For now, we only have one level, so we reset the current level
+    const score = joueur.score;
+    joueur.reset(14, 14, score);
+    console.log(joueur.scoreInit);
+    tempsInitial = null; // Reset timer for next level
+  }
+
+  // Conditions de victoire
+  // for now setting to false to avoid winning immediately when testing
+  if (
+    joueur.nbrLingots === 6 &&
+    joueur.col === 18 &&
+    joueur.row === -1 &&
+    false
+  ) {
     etatJeu = "win";
     tempsFin = performance.now();
     dessinerVictoire(ctx, canvas, 0);
