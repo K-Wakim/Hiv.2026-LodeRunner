@@ -35,6 +35,6 @@
 
     4.1 Movement
     4.2 Animation
-    4.3 Pickup
+    4.3 Pickup/Drop
     4.4 Death
-    4.5 Spawn
+    4.5 Spawn/Respawn
