@@ -28,8 +28,8 @@
     ~3.4 Time~
     ~3.5 Level (number)~
     ~3.6 Lives~
-    3.7 Sounds
-    3.8 Win / Lose Screen
+    ~3.7 Sounds~
+    ~3.8 Win / Lose Screen~
 
 ## 4. Guards
 

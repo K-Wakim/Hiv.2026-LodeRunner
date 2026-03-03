@@ -23,6 +23,7 @@ import {
 import { Joueur } from "./joueur.js";
 import { input, keys } from "./input.js";
 import { Sons } from "./sons.js";
+import { Gardes } from "./gardes.js";
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -47,6 +48,12 @@ const joueur = new Joueur(
   "assets/images/imgJoueur/BaseRunner.png",
   sons,
 );
+
+// cellules qu'un garde est deja spawn dans
+const cellOccupees = new Set();
+const gardes = [];
+
+spawnGardes();
 
 let tempsEcoule = "00:00";
 let tempsInitial = null;
@@ -85,6 +92,7 @@ function redessiner() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   dessinerNiveau();
   joueur.dessiner(ctx);
+  gardes.forEach((garde) => garde.dessiner(ctx));
 }
 
 function update() {
@@ -113,8 +121,8 @@ function update() {
     // For now, we only have one level, so we reset the current level
     const score = joueur.score;
     joueur.reset(14, 14, score);
-    console.log(joueur.scoreInit);
     tempsInitial = null; // Reset timer for next level
+    spawnGardes(); // Spawn new guards for the next level
   }
 
   // Conditions de victoire
@@ -142,7 +150,7 @@ function update() {
 
     joueur.ramasserLingot();
 
-    joueur.death();
+    joueur.death(spawnGardes);
 
     // échelle pour passer au prochaine niveau
     if (joueur.nbrLingots === 6) {
@@ -159,6 +167,23 @@ function update() {
   joueur.mettreAJourAnimation(keys);
 
   redessiner();
+}
+
+function spawnGardes() {
+  if (gardes.length > 0) {
+    gardes.length = 0; // Remove existing guards
+    cellOccupees.clear(); // Clear occupied cells
+  }
+  for (let i = 0; i < 2 + niveauActuel; i++) {
+    const g = new Gardes(
+      joueur.niveau,
+      "assets/images/imgGardes/BaseGarde.png",
+      sons,
+      cellOccupees,
+    );
+    gardes.push(g);
+    cellOccupees.add(`${g.row},${g.col}`);
+  }
 }
 
 objLingot.onload = () => redessiner();

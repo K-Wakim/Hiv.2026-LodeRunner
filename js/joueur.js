@@ -33,7 +33,7 @@ export class Joueur {
     niveau,
     colDepart = 1,
     rowDepart = 1,
-    srcImage = "assets/images/imgJoueur/BaseRunner.png",
+    srcImage,
     sons = null,
     scoreInit = SCORE,
   ) {
@@ -612,7 +612,7 @@ export class Joueur {
 
   // A COMPLÉTER
   // ---- Mort ----
-  death() {
+  death(func) {
     const surBrique = cellule(this.niveau, this.col, this.row) === "B";
 
     if (!surBrique) {
@@ -633,6 +633,8 @@ export class Joueur {
     this.y = 14 * TAILLE_CELLULE;
 
     this.niveau = this.niveauInit.map((row) => [...row]);
+
+    func();
   }
 
   // ---- Dessin ----
