@@ -103,8 +103,12 @@ function update() {
   }
 
   // Conditions pour passer au prochain niveau
-  if (joueur.nbrLingots === 6 && joueur.col === 18 && joueur.row === -1) {
-    console.log("Niveau terminé !");
+  if (
+    joueur.nbrLingots === 6 &&
+    joueur.col === 18 &&
+    joueur.row === -1 &&
+    niveauActuel < 10
+  ) {
     niveauActuel++;
     // For now, we only have one level, so we reset the current level
     const score = joueur.score;
@@ -114,7 +118,6 @@ function update() {
   }
 
   // Conditions de victoire
-  // for now setting to false to avoid winning immediately when testing
   if (
     joueur.nbrLingots === 6 &&
     joueur.col === 18 &&
