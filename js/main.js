@@ -119,7 +119,7 @@ function update() {
     joueur.nbrLingots === 6 &&
     joueur.col === 18 &&
     joueur.row === -1 &&
-    false
+    niveauActuel === 10
   ) {
     etatJeu = "win";
     tempsFin = performance.now();
