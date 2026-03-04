@@ -152,6 +152,11 @@ function update() {
 
     joueur.death(spawnGardes);
 
+    gardes.forEach((garde) => {
+      garde.mettreAJour(joueur);
+      garde.dessiner(ctx);
+    });
+
     // échelle pour passer au prochaine niveau
     if (joueur.nbrLingots === 6) {
       joueur.niveau[0][18] = "E";
