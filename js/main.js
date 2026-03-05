@@ -150,7 +150,7 @@ function update() {
 
     joueur.ramasserLingot();
 
-    joueur.death(spawnGardes);
+    joueur.death(spawnGardes, gardes);
 
     gardes.forEach((garde) => {
       garde.mettreAJour(joueur);

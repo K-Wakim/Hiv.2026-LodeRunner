@@ -422,7 +422,6 @@ export class Joueur {
     const col = this.col;
     const row = this.row;
 
-    const ici = cellule(this.niveau, col, row);
     const haut = cellule(this.niveau, col, row - 1);
 
     // Monter si on est dans une échelle OU si celle du haut est une échelle
@@ -612,10 +611,19 @@ export class Joueur {
 
   // A COMPLÉTER
   // ---- Mort ----
-  death(func) {
+  death(func, gardes) {
     const surBrique = cellule(this.niveau, this.col, this.row) === "B";
+    let surGarde = false;
 
-    if (!surBrique) {
+    gardes.forEach((garde) => {
+      const gardeCol = garde.col;
+      const gardeRow = garde.row;
+      if (gardeCol === this.col && gardeRow === this.row) {
+        surGarde = true;
+      }
+    });
+
+    if (!surBrique && !surGarde) {
       this._mortLock = false;
       return;
     }

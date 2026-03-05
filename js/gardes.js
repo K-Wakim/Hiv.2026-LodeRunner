@@ -96,18 +96,25 @@ export class Gardes {
     return Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
   }
 
+  tuileAuPixel(px, py) {
+    const c = Math.floor(px / TAILLE_CELLULE);
+    const r = Math.floor(py / TAILLE_CELLULE);
+    return cellule(this.niveau, c, r);
+  }
+
   // ---- États ----
   estSurCorde() {
     return estCorde(cellule(this.niveau, this.col, this.row));
   }
 
   estDansEchelle() {
-    const col = this.col;
-    const rowCentre = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
-    const rowPieds = Math.floor((this.y + this.h - 1) / TAILLE_CELLULE);
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const fy = this.y + this.h - 1; // pieds
+
     return (
-      estEchelle(cellule(this.niveau, col, rowCentre)) ||
-      estEchelle(cellule(this.niveau, col, rowPieds))
+      estEchelle(this.tuileAuPixel(cx, cy)) ||
+      estEchelle(this.tuileAuPixel(cx, fy))
     );
   }
 
@@ -142,6 +149,8 @@ export class Gardes {
     this.y = row * TAILLE_CELLULE;
   }
 
+  // chatgpt a cook sur ce code comment
+  // A+ explication
   // ---- Mise à jour (IA + physique) ----
 
   /**
@@ -199,8 +208,69 @@ export class Gardes {
     }
   }
 
-  // chatgpt a cook sur ce code comment
-  // A+ explication
+  // ---- Monter / Descendre échelle ----
+  monterEchelle() {
+    if (this.enChute) return;
+
+    const col = this.col;
+    const row = this.row;
+
+    const haut = cellule(this.niveau, col, row - 1);
+
+    // Monter si on est dans une échelle OU si celle du haut est une échelle
+    if (!(this.estDansEchelle() || estEchelle(haut))) return;
+
+    // Alignement obligatoire sur la colonne de l'échelle
+    this.snapXSurColonne(col);
+
+    // Monter
+    this.y -= this.vitesse;
+    this.vy = 0;
+
+    // Sortie propre en haut: si plus d'échelle autour du centre/pieds
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const fy = this.y + this.h - 1;
+    const tCentre = this.tuileAuPixel(cx, cy);
+    const tPieds = this.tuileAuPixel(cx, fy);
+
+    if (!estEchelle(tCentre) && !estEchelle(tPieds)) {
+      // Snap sur la rangée la plus proche (évite rester entre 2 cases)
+      const r = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
+      this.snapYSurRangee(r);
+      this.forceIdle = true;
+    }
+  }
+
+  descendreEchelle() {
+    if (this.enChute) return;
+
+    const col = this.col;
+    const row = this.row;
+
+    const ici = cellule(this.niveau, col, row);
+    const bas = cellule(this.niveau, col, row + 1);
+
+    // Descendre si on est dans l'échelle OU si la case du bas est une échelle (embarquer)
+    if (!(this.estDansEchelle() || estEchelle(ici) || estEchelle(bas))) return;
+
+    // Alignement obligatoire sur la colonne de l'échelle
+    this.snapXSurColonne(col);
+
+    // Descendre
+    this.y += this.vitesse;
+    this.vy = 0;
+
+    // Si on arrive sur un sol solide sous les pieds (fin d'échelle), on se pose dessus
+    const rowPieds = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+    const tSous = cellule(this.niveau, col, rowPieds);
+
+    if (estSolide(tSous)) {
+      this.y = rowPieds * TAILLE_CELLULE - this.h;
+      this.forceIdle = true;
+    }
+  }
+
   /**
    * IA de déplacement du garde vers le joueur.
    * Adapté de deplacerGarde() du projet de référence.
@@ -350,16 +420,10 @@ export class Gardes {
 
       if (moveV === -1) {
         // Monter : vérifier que la case du haut n'est pas solide
-        const rowCheck = Math.floor(nextY / TAILLE_CELLULE);
-        if (!estSolide(cellule(this.niveau, col, rowCheck))) {
-          this.y = nextY;
-        }
+        this.monterEchelle();
       } else {
         // Descendre : vérifier que les pieds n'entrent pas dans un solide
-        const rowCheck = Math.floor((nextY + this.h) / TAILLE_CELLULE);
-        if (!estSolide(cellule(this.niveau, col, rowCheck))) {
-          this.y = nextY;
-        }
+        this.descendreEchelle();
       }
 
       this.dirV = moveV;
