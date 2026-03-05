@@ -121,8 +121,15 @@ function update() {
     // For now, we only have one level, so we reset the current level
     const score = joueur.score;
     joueur.reset(14, 14, score);
+    //etatJeu = "idle";
+    //keys.jouer = false;
     tempsInitial = null; // Reset timer for next level
     spawnGardes(); // Spawn new guards for the next level
+    /*
+    if (keys.jouer) {
+      etatJeu = "play";
+    }
+      */
   }
 
   // Conditions de victoire

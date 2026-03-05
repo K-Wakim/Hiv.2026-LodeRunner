@@ -642,6 +642,7 @@ export class Joueur {
     this.y = 14 * TAILLE_CELLULE;
 
     this.niveau = this.niveauInit.map((row) => [...row]);
+    this.nbrLingots = 0;
 
     func();
   }
