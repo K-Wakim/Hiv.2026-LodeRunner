@@ -154,6 +154,8 @@ function update() {
 
     gardes.forEach((garde) => {
       garde.mettreAJour(joueur);
+      garde.death(gardes, joueur);
+      garde.respawn(gardes, joueur);
       garde.dessiner(ctx);
     });
 

@@ -14,6 +14,8 @@ const VITESSE_GARDE = 1; // Pixels par frame
 const DELAI_DECISION = 15; // Frames entre chaque décision de roaming
 const TOLERANCE_VERTICALE = 1; // Écart de rangées minimum avant de chercher une échelle
 
+let estTombe = false;
+
 function cellule(niveau, col, row) {
   if (row < 0 || row >= niveau.length) return "Be";
   if (col < 0 || col >= niveau[0].length) return "Be";
@@ -56,6 +58,7 @@ export class Gardes {
     const cell = celluleAleatoire(niveau, occupees);
 
     this.niveau = niveau;
+    this.niveauInit = niveau.map((row) => [...row]);
     this._col = cell?.col ?? 1;
     this._row = cell?.row ?? 1;
     this.x = this._col * TAILLE_CELLULE;
@@ -149,6 +152,35 @@ export class Gardes {
     this.y = row * TAILLE_CELLULE;
   }
 
+  /**
+   * Finds the closest valid cell to (fromCol, fromRow):
+   * a "_" cell with a solid "B" directly beneath it,
+   * scanning outward in a spiral-like column order.
+   */
+  _trouverCelluleValideProche(fromCol, fromRow) {
+    const nRows = this.niveau.length;
+    const nCols = this.niveau[0].length;
+    let bestCell = null;
+    let bestDist = Number.MAX_SAFE_INTEGER;
+
+    for (let row = 0; row < nRows - 1; row++) {
+      for (let col = 0; col < nCols; col++) {
+        if (
+          this.niveau[row][col] === "_" &&
+          this.niveau[row + 1]?.[col] === "B"
+        ) {
+          const dist = Math.abs(col - fromCol) + Math.abs(row - fromRow);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestCell = { col, row };
+          }
+        }
+      }
+    }
+
+    return bestCell;
+  }
+
   // chatgpt a cook sur ce code comment
   // A+ explication
   // ---- Mise à jour (IA + physique) ----
@@ -158,7 +190,7 @@ export class Gardes {
    * Adapté de deplacerGarde() + graviteGardes() du projet de référence.
    */
   mettreAJour(joueur) {
-    this._appliquerGravite();
+    this._appliquerGravite(joueur);
     this._deplacer(joueur);
   }
 
@@ -168,7 +200,7 @@ export class Gardes {
    * - Sur échelle → vy = 0 (la méthode _deplacer gère le mouvement).
    * - Sinon       → accélération vers le bas, correction de pénétration.
    */
-  _appliquerGravite() {
+  _appliquerGravite(joueur) {
     // Corde : snap Y sur la rangée et aucune gravité
     if (this.estSurCorde()) {
       this.y = this.row * TAILLE_CELLULE;
@@ -188,23 +220,54 @@ export class Gardes {
     // On utilise estSurSolide() qui inclut les échelles comme sol : un garde
     // qui marche horizontalement au-dessus d'une échelle ne doit pas y tomber.
     // L'entrée intentionnelle dans une échelle est gérée par _deplacer().
-    if (!this.estSurSolide()) {
+    if (
+      !this.estSurSolide() &&
+      !(
+        this.niveauInit[this.row][this.col] === "B" &&
+        this.niveau[this.row][this.col] === "_"
+      )
+    ) {
       this.enChute = true;
       this.vy += this.gravite;
       if (this.vy > 8) this.vy = 8; // vitesse terminale
       this.y += this.vy;
 
-      // Correction de pénétration : recaler sur le dessus du solide touché
       if (this.estSurSolide()) {
+        // Correction de pénétration : recaler sur le dessus du solide touché
         const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
         this.y = rowSous * TAILLE_CELLULE - this.h;
         this.vy = 0;
         this.enChute = false;
       }
     } else {
-      // Déjà au sol (sur B, Be, ou E)
       this.vy = 0;
       this.enChute = false;
+      if (!estTombe) {
+        //if (this.sons) this.sons.jouer("gardeTombeDansBrique");
+        estTombe = true;
+        joueur.score += 75;
+      }
+
+      if (
+        this.niveauInit[this.row][this.col] === "B" &&
+        this.niveau[this.row][this.col] === "_"
+      ) {
+        // Capture the guard's trapped position at the moment of falling
+        const snapCol = this.col;
+        const snapRow = this.row;
+        setTimeout(() => {
+          // Only teleport if the brick still hasn't respawned
+          if (this.niveau[snapRow][snapCol] !== "_") return;
+
+          const cible = this._trouverCelluleValideProche(snapCol, snapRow);
+          if (cible) {
+            this.x = cible.col * TAILLE_CELLULE;
+            this.y = cible.row * TAILLE_CELLULE;
+            this.vy = 0;
+            this.enChute = false;
+          }
+        }, 4000);
+      }
     }
   }
 
@@ -416,8 +479,6 @@ export class Gardes {
       (moveV === 1 && estEchelle(cellule(this.niveau, col, row + 1)));
 
     if (moveV !== 0 && peutBougerVertical) {
-      const nextY = this.y + moveV * this.vitesse;
-
       if (moveV === -1) {
         // Monter : vérifier que la case du haut n'est pas solide
         this.monterEchelle();
@@ -429,6 +490,26 @@ export class Gardes {
       this.dirV = moveV;
     } else {
       this.dirV = 0;
+    }
+  }
+
+  death(gardes, joueur) {
+    if (
+      this.niveau[this.row][this.col] === "B" ||
+      this.niveau[this.row][this.col] === "Be"
+    ) {
+      gardes.splice(gardes.indexOf(this), 1);
+      joueur.score += 75;
+      estTombe = false;
+    }
+  }
+
+  respawn(gardes) {
+    if (!gardes.includes(this)) {
+      console.log(this._col, this._row);
+      this.x = this._col * TAILLE_CELLULE;
+      this.y = this._row * TAILLE_CELLULE;
+      gardes.push(this);
     }
   }
 

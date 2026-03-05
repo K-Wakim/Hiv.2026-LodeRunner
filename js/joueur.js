@@ -636,6 +636,7 @@ export class Joueur {
 
     this.vie = this.vie - 1;
     this.score = this.scoreInit;
+    this.nbrLingots = 0;
 
     this.x = 14 * TAILLE_CELLULE;
     this.y = 14 * TAILLE_CELLULE;
