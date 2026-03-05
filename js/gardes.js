@@ -70,6 +70,7 @@ export class Gardes {
     this.vitesse = VITESSE_GARDE;
     this.enChute = false;
     this.lacheCorde = false;
+    this._grimpeEchelle = false;
 
     // IA
     this.dirH = 0; // -1 gauche, 0 rien, 1 droite
@@ -96,18 +97,27 @@ export class Gardes {
     return Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
   }
 
+  tuileAuPixel(px, py) {
+    const c = Math.floor(px / TAILLE_CELLULE);
+    const r = Math.floor(py / TAILLE_CELLULE);
+    return cellule(this.niveau, c, r);
+  }
+
   // ---- États ----
   estSurCorde() {
-    return estCorde(cellule(this.niveau, this.col, this.row));
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    return estCorde(this.tuileAuPixel(cx, cy));
   }
 
   estDansEchelle() {
-    const col = this.col;
-    const rowCentre = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
-    const rowPieds = Math.floor((this.y + this.h - 1) / TAILLE_CELLULE);
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const fy = this.y + this.h - 1; // pieds
+
     return (
-      estEchelle(cellule(this.niveau, col, rowCentre)) ||
-      estEchelle(cellule(this.niveau, col, rowPieds))
+      estEchelle(this.tuileAuPixel(cx, cy)) ||
+      estEchelle(this.tuileAuPixel(cx, fy))
     );
   }
 
@@ -142,6 +152,18 @@ export class Gardes {
     this.y = row * TAILLE_CELLULE;
   }
 
+  lacherCorde() {
+    if (this.enChute) return;
+
+    if (this.estSurCorde() && !this.estDansEchelle()) {
+      this.lacheCorde = true;
+      this.y += 2;
+      this.vy = 0;
+    }
+  }
+
+  // chatgpt a cook sur ce code comment
+  // A+ explication
   // ---- Mise à jour (IA + physique) ----
 
   /**
@@ -149,8 +171,9 @@ export class Gardes {
    * Adapté de deplacerGarde() + graviteGardes() du projet de référence.
    */
   mettreAJour(joueur) {
-    this._appliquerGravite();
+    this._grimpeEchelle = false;
     this._deplacer(joueur);
+    this._appliquerGravite();
   }
 
   /**
@@ -160,47 +183,133 @@ export class Gardes {
    * - Sinon       → accélération vers le bas, correction de pénétration.
    */
   _appliquerGravite() {
-    // Corde : snap Y sur la rangée et aucune gravité
-    if (this.estSurCorde()) {
-      this.y = this.row * TAILLE_CELLULE;
+    // --- CORDE ---
+    // Sur corde: pas de gravité tant qu'on n'a pas lâché
+    if (this.estSurCorde() && !this.lacheCorde) {
+      this.vy = 0;
+      this.enChute = false;
+      this.alignerSurCorde(); // même alignement que le joueur
+      return;
+    }
+
+    // Dès qu'on n'est plus sur la corde, on reset le flag
+    if (!this.estSurCorde()) {
+      this.lacheCorde = false;
+    }
+
+    // --- ECHELLE ---
+    // IMPORTANT:
+    // On coupe la gravité seulement si le garde "grimpe" réellement cette frame.
+    // Sinon, il peut rester accroché à l'échelle quand il traverse horizontalement.
+    if (this.estDansEchelle() && this._grimpeEchelle) {
       this.vy = 0;
       this.enChute = false;
       return;
     }
 
-    // Échelle : pas de gravité tant que le garde y est accroché
-    if (this.estDansEchelle()) {
+    // --- SUPPORT (solide OU échelle sous les pieds) ---
+    // On garde les échelles comme support pour éviter qu'un garde tombe
+    // juste parce qu'il marche au-dessus d'une échelle.
+    if (this.estSurSolide()) {
+      const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+      this.y = rowSous * TAILLE_CELLULE - this.h; // snap sur le dessus
       this.vy = 0;
       this.enChute = false;
       return;
     }
 
-    // Chute libre.
-    // On utilise estSurSolide() qui inclut les échelles comme sol : un garde
-    // qui marche horizontalement au-dessus d'une échelle ne doit pas y tomber.
-    // L'entrée intentionnelle dans une échelle est gérée par _deplacer().
-    if (!this.estSurSolide()) {
-      this.enChute = true;
-      this.vy += this.gravite;
-      if (this.vy > 8) this.vy = 8; // vitesse terminale
-      this.y += this.vy;
+    // --- CHUTE ---
+    this.enChute = true;
 
-      // Correction de pénétration : recaler sur le dessus du solide touché
-      if (this.estSurSolide()) {
-        const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
-        this.y = rowSous * TAILLE_CELLULE - this.h;
-        this.vy = 0;
-        this.enChute = false;
-      }
-    } else {
-      // Déjà au sol (sur B, Be, ou E)
+    this.vy += this.gravite;
+    if (this.vy > 8) this.vy = 8; // vitesse terminale
+    this.y += this.vy;
+
+    // Collision / correction si on retouche un support pendant la chute
+    if (this.estSurSolide()) {
+      const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+      this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
     }
   }
 
-  // chatgpt a cook sur ce code comment
-  // A+ explication
+  alignerSurCorde() {
+    const row = this.row;
+    const yCorde = row * TAILLE_CELLULE + CORDE_OFFSET;
+    const AJUSTEMENT_SPRITE = 8;
+
+    this.y = yCorde - AJUSTEMENT_SPRITE;
+  }
+
+  // ---- Monter / Descendre échelle ----
+  monterEchelle() {
+    if (this.enChute) return;
+
+    const col = this.col;
+    const row = this.row;
+
+    const haut = cellule(this.niveau, col, row - 1);
+
+    // Monter si on est dans une échelle OU si celle du haut est une échelle
+    if (!(this.estDansEchelle() || estEchelle(haut))) return;
+
+    // Alignement obligatoire sur la colonne de l'échelle
+    this.snapXSurColonne(col);
+
+    // Monter
+    this.y -= this.vitesse;
+    this.vy = 0;
+
+    // Sortie propre en haut: si plus d'échelle autour du centre/pieds
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const fy = this.y + this.h - 1;
+
+    const tCentre = this.tuileAuPixel(cx, cy);
+    const tPieds = this.tuileAuPixel(cx, fy);
+
+    if (!estEchelle(tCentre) && !estEchelle(tPieds)) {
+      // Snap sur la rangée la plus proche (évite rester entre 2 cases)
+      const r = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
+      this.snapYSurRangee(r);
+      this.forceIdle = true;
+    }
+  }
+
+  descendreEchelle() {
+    if (this.enChute) return;
+
+    const col = this.col;
+    const row = this.row;
+
+    const ici = cellule(this.niveau, col, row);
+    const bas = cellule(this.niveau, col, row + 1);
+
+    // Descendre si on est dans l'échelle OU si la case du bas est une échelle (embarquer)
+    if (!(this.estDansEchelle() || estEchelle(ici) || estEchelle(bas))) return;
+
+    // Alignement obligatoire sur la colonne de l'échelle
+    this.snapXSurColonne(col);
+
+    // Descendre
+    this.y += this.vitesse;
+    this.vy = 0;
+
+    // Si on arrive sur un sol solide sous les pieds (fin d'échelle), on se pose dessus
+    const rowPieds = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+    const tSous = cellule(this.niveau, col, rowPieds);
+
+    if (estSolide(tSous)) {
+      this.y = rowPieds * TAILLE_CELLULE - this.h;
+
+      const r = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
+      this.snapYSurRangee(r);
+
+      this.forceIdle = true;
+    }
+  }
+
   /**
    * IA de déplacement du garde vers le joueur.
    * Adapté de deplacerGarde() du projet de référence.
@@ -334,6 +443,12 @@ export class Gardes {
         estSolide(cellule(this.niveau, checkCol, rowPieds));
 
       if (!bloque) this.x = nextX;
+
+      if (dansEchelle && !this._grimpeEchelle) {
+        const r = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
+        this.snapYSurRangee(r);
+      }
+
       this.dirH = moveH;
     }
 
@@ -346,25 +461,24 @@ export class Gardes {
       (moveV === 1 && estEchelle(cellule(this.niveau, col, row + 1)));
 
     if (moveV !== 0 && peutBougerVertical) {
+      this._grimpeEchelle = true;
       const nextY = this.y + moveV * this.vitesse;
 
       if (moveV === -1) {
         // Monter : vérifier que la case du haut n'est pas solide
-        const rowCheck = Math.floor(nextY / TAILLE_CELLULE);
-        if (!estSolide(cellule(this.niveau, col, rowCheck))) {
-          this.y = nextY;
-        }
+        this.monterEchelle();
       } else {
         // Descendre : vérifier que les pieds n'entrent pas dans un solide
-        const rowCheck = Math.floor((nextY + this.h) / TAILLE_CELLULE);
-        if (!estSolide(cellule(this.niveau, col, rowCheck))) {
-          this.y = nextY;
-        }
+        this.descendreEchelle();
       }
 
       this.dirV = moveV;
     } else {
       this.dirV = 0;
+    }
+
+    if (surCorde && joueur.row > this.row) {
+      this.lacherCorde();
     }
   }
 
