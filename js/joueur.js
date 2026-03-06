@@ -75,7 +75,7 @@ export class Joueur {
     // Preload les sprites
     this.sprites = this.chargerSprites();
 
-    // Image courrante
+    // Image courante
     this.img = this.sprites.idle;
     this.imgOK = true;
     this.img.onload = () => {};

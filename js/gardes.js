@@ -78,12 +78,20 @@ export class Gardes {
     this.tuileBut = null; // { col, row } — tuile cible de l'algorithme de déplacement
     this.decisionTimer = 0; // frames avant prochaine décision de roaming
 
-    this.img = new Image();
-    this.img.src = srcImage;
-    this.imgOK = false;
-    this.img.onload = () => {
-      this.imgOK = true;
-    };
+    // --- Animation ---
+    this.dir = "droite"; // Direction droite ou gauche
+    this.etat = "idle"; // idle, run, climb, rope, fall
+    this.forceIdle = false;
+    this.animIndex = 0;
+    this.animTimer = 0;
+    this.animDelay = 8;
+
+    // Preload les sprites
+    this.sprites = this.chargerSprites();
+
+    // Image courante
+    this.img = this.sprites.idle;
+    this.imgOK = true;
 
     this.sons = sons;
   }
@@ -152,6 +160,128 @@ export class Gardes {
     this.y = row * TAILLE_CELLULE;
   }
 
+  chargerImage(src) {
+    const img = new Image();
+    img.src = src;
+    return img;
+  }
+
+  chargerSprites() {
+    const basePath = "assets/images/imgGardes/";
+
+    return {
+      idle: this.chargerImage(basePath + "BaseGarde.png"),
+
+      runRight: [
+        this.chargerImage(basePath + "GardeDroite1.png"),
+        this.chargerImage(basePath + "GardeDroite2.png"),
+        this.chargerImage(basePath + "GardeDroite3.png"),
+      ],
+
+      runLeft: [
+        this.chargerImage(basePath + "GardeGauche1.png"),
+        this.chargerImage(basePath + "GardeGauche2.png"),
+        this.chargerImage(basePath + "GardeGauche3.png"),
+      ],
+
+      climb: [
+        this.chargerImage(basePath + "GardeEchelle1.png"),
+        this.chargerImage(basePath + "GardeEchelle2.png"),
+      ],
+
+      ropeRight: [
+        this.chargerImage(basePath + "GardeCordeDroite1.png"),
+        this.chargerImage(basePath + "GardeCordeDroite2.png"),
+        this.chargerImage(basePath + "GardeCordeDroite3.png"),
+      ],
+
+      ropeLeft: [
+        this.chargerImage(basePath + "GardeCordeGauche1.png"),
+        this.chargerImage(basePath + "GardeCordeGauche2.png"),
+        this.chargerImage(basePath + "GardeCordeGauche3.png"),
+      ],
+
+      fall: [
+        this.chargerImage(basePath + "GardeDrop1.png"),
+        this.chargerImage(basePath + "GardeDrop2.png"),
+      ],
+    };
+  }
+
+  setEtat(nouvelEtat) {
+    if (this.etat !== nouvelEtat) {
+      this.etat = nouvelEtat;
+      this.animIndex = 0;
+      this.animTimer = 0;
+    }
+  }
+
+  mettreAJourAnimation() {
+    if (this.dirH < 0) this.dir = "gauche";
+    else if (this.dirH > 0) this.dir = "droite";
+
+    const surCorde = this.estSurCorde() && !this.lacheCorde;
+    const dansEchelle = this.estDansEchelle();
+    const bougeH = this.dirH !== 0;
+    const bougeV = this.dirV !== 0;
+
+    // Choisir état
+    if (this.enChute) {
+      this.setEtat("fall");
+    } else if (surCorde) {
+      this.setEtat("rope");
+    } else if (dansEchelle && bougeV) {
+      this.setEtat("climb");
+    } else if (bougeH) {
+      this.setEtat("run");
+    } else {
+      this.setEtat("idle");
+      this.img = this.sprites.idle;
+      return;
+    }
+
+    let frames = null;
+    let doitAnimer = true;
+
+    if (this.etat === "run") {
+      frames =
+        this.dir === "gauche" ? this.sprites.runLeft : this.sprites.runRight;
+      this.animDelay = 8;
+      doitAnimer = bougeH;
+    } else if (this.etat === "climb") {
+      frames = this.sprites.climb;
+      this.animDelay = 10;
+      doitAnimer = bougeV;
+    } else if (this.etat === "rope") {
+      frames =
+        this.dir === "gauche" ? this.sprites.ropeLeft : this.sprites.ropeRight;
+      this.animDelay = 8;
+      doitAnimer = bougeH;
+    } else if (this.etat === "fall") {
+      frames = this.sprites.fall;
+      this.animDelay = 10;
+      doitAnimer = true;
+    }
+
+    if (!frames) {
+      this.img = this.sprites.idle;
+      return;
+    }
+
+    if (!doitAnimer) {
+      this.img = frames[this.animIndex % frames.length];
+      return;
+    }
+
+    this.animTimer++;
+    if (this.animTimer >= this.animDelay) {
+      this.animTimer = 0;
+      this.animIndex = (this.animIndex + 1) % frames.length;
+    }
+
+    this.img = frames[this.animIndex];
+  }
+
   lacherCorde() {
     if (this.enChute) return;
 
@@ -172,8 +302,11 @@ export class Gardes {
    */
   mettreAJour(joueur) {
     this._grimpeEchelle = false;
+
     this._deplacer(joueur);
     this._appliquerGravite();
+
+    this.mettreAJourAnimation();
   }
 
   /**
