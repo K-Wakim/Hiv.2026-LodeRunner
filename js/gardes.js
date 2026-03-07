@@ -203,6 +203,12 @@ export class Gardes {
     return true;
   }
 
+  occupeMemeCellule(col, row, gardes = []) {
+    return gardes.some(
+      (garde) => garde !== this && garde.col === col && garde.row === row,
+    );
+  }
+
   // ---- Snaps ----
   snapXSurColonne(col) {
     this.x = col * TAILLE_CELLULE;
@@ -352,6 +358,7 @@ export class Gardes {
    */
   mettreAJour(joueur, gardes) {
     this._grimpeEchelle = false;
+    this._tousLesGardes = gardes;
 
     this._deplacer(joueur);
     this._appliquerGravite(gardes);
@@ -713,19 +720,29 @@ export class Gardes {
     if (moveH !== 0) {
       const nextX = this.x + moveH * this.vitesse;
 
-      // Vérifier la colonne qui serait pénétrée (bord avant du garde)
       const checkCol =
         moveH === 1
           ? Math.floor((nextX + this.w - 1) / TAILLE_CELLULE)
           : Math.floor(nextX / TAILLE_CELLULE);
 
-      // Tester à hauteur de la tête ET des pieds pour éviter les angles
       const rowPieds = Math.floor((this.y + this.h - 2) / TAILLE_CELLULE);
-      const bloque =
+
+      const bloqueSolide =
         estSolide(cellule(this.niveau, checkCol, row)) ||
         estSolide(cellule(this.niveau, checkCol, rowPieds));
 
-      if (!bloque) this.x = nextX;
+      const nextColCentre = Math.floor((nextX + this.w / 2) / TAILLE_CELLULE);
+      const nextRowCentre = this.row;
+
+      const bloqueParGarde = this.occupeMemeCellule(
+        nextColCentre,
+        nextRowCentre,
+        this._tousLesGardes || [],
+      );
+
+      if (!bloqueSolide && !bloqueParGarde) {
+        this.x = nextX;
+      }
 
       if (dansEchelle && !this._grimpeEchelle) {
         const r = Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
@@ -744,18 +761,28 @@ export class Gardes {
       (moveV === 1 && estEchelle(cellule(this.niveau, col, row + 1)));
 
     if (moveV !== 0 && peutBougerVertical) {
-      this._grimpeEchelle = true;
-      const nextY = this.y + moveV * this.vitesse;
+      const nextRowCentre = this.row + moveV;
+      const nextColCentre = this.col;
 
-      if (moveV === -1) {
-        // Monter : vérifier que la case du haut n'est pas solide
-        this.monterEchelle();
+      const bloqueParGarde = this.occupeMemeCellule(
+        nextColCentre,
+        nextRowCentre,
+        this._tousLesGardes || [],
+      );
+
+      if (!bloqueParGarde) {
+        this._grimpeEchelle = true;
+
+        if (moveV === -1) {
+          this.monterEchelle();
+        } else {
+          this.descendreEchelle();
+        }
+
+        this.dirV = moveV;
       } else {
-        // Descendre : vérifier que les pieds n'entrent pas dans un solide
-        this.descendreEchelle();
+        this.dirV = 0;
       }
-
-      this.dirV = moveV;
     } else {
       this.dirV = 0;
     }
