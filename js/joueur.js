@@ -634,7 +634,13 @@ export class Joueur {
   detruitBrique(gauche) {
     const col = this.col + (gauche ? -1 : 1); // Côté vers lequel on se déplace
     const row = this.row + 1; // Brique sous les pieds
+
     const t = cellule(this.niveau, col, row);
+    const tDessus = cellule(this.niveau, col, row - 1);
+
+    if (t !== "B") return;
+
+    if (tDessus === "L" || tDessus === "E" || tDessus === "C") return;
 
     if (t === "B") {
       // Détruire la brique: remplacer la tuile par du vide
