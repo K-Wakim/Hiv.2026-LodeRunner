@@ -29,6 +29,10 @@ function estEchelle(t) {
 function estCorde(t) {
   return t === CORDE;
 }
+function estTrou(t) {
+  return t === "T";
+}
+
 function estVide(t) {
   return !estSolide(t) && !estEchelle(t) && t !== CORDE;
 }
@@ -75,6 +79,12 @@ export class Gardes {
     // Lingot
     this.aLingot = false;
     this.timerDepotLingot = 0;
+
+    // Trou
+    this.estDansTrou = false;
+    this.timerTrou = 0;
+    this.trouCol = null;
+    this.trouRow = null;
 
     // IA
     this.dirH = 0; // -1 gauche, 0 rien, 1 droite
@@ -133,14 +143,33 @@ export class Gardes {
     );
   }
 
-  estSurSolide() {
+  caseSupporteParAutreGarde(col, row, gardes = []) {
+    return gardes.some(
+      (garde) =>
+        garde !== this &&
+        garde.estDansTrou &&
+        garde.trouCol === col &&
+        garde.trouRow === row,
+    );
+  }
+
+  estSurSolide(gardes = []) {
     const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+
     const colG = Math.floor((this.x + 1) / TAILLE_CELLULE);
     const colD = Math.floor((this.x + this.w - 2) / TAILLE_CELLULE);
+
     for (let c = colG; c <= colD; c++) {
       const t = cellule(this.niveau, c, rowSous);
+
       if (estSolide(t) || estEchelle(t)) return true;
+
+      // trou occupé par un autre garde = support
+      if (t === "T" && this.caseSupporteParAutreGarde(c, rowSous, gardes)) {
+        return true;
+      }
     }
+
     return false;
   }
 
@@ -154,6 +183,24 @@ export class Gardes {
       if (estSolide(cellule(this.niveau, c, rowSous))) return true;
     }
     return false;
+  }
+
+  estCompletementAuDessusTrou(gardes = []) {
+    const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+
+    const colG = Math.floor((this.x + 1) / TAILLE_CELLULE);
+    const colD = Math.floor((this.x + this.w - 2) / TAILLE_CELLULE);
+
+    if (colG !== colD) return false;
+
+    const t = cellule(this.niveau, colG, rowSous);
+
+    if (!estTrou(t)) return false;
+
+    // si le trou est occupé par un autre garde coincé, ça devient un support
+    if (this.caseSupporteParAutreGarde(colG, rowSous, gardes)) return false;
+
+    return true;
   }
 
   // ---- Snaps ----
@@ -296,7 +343,6 @@ export class Gardes {
     }
   }
 
-  // chatgpt a cook sur ce code comment
   // A+ explication
   // ---- Mise à jour (IA + physique) ----
 
@@ -304,54 +350,75 @@ export class Gardes {
    * Point d'entrée appelé chaque frame depuis main.js.
    * Adapté de deplacerGarde() + graviteGardes() du projet de référence.
    */
-  mettreAJour(joueur) {
+  mettreAJour(joueur, gardes) {
     this._grimpeEchelle = false;
 
     this._deplacer(joueur);
-    this._appliquerGravite();
+    this._appliquerGravite(gardes);
 
-    this.ramasserLingot(); 
+    this.ramasserLingot();
+    this.deposerLingot();
 
     this.mettreAJourAnimation();
   }
 
-  /**
-   * Gravité du garde.
-   * - Sur corde  → snap vertical, vy = 0.
-   * - Sur échelle → vy = 0 (la méthode _deplacer gère le mouvement).
-   * - Sinon       → accélération vers le bas, correction de pénétration.
-   */
-  _appliquerGravite() {
-    // --- CORDE ---
-    // Sur corde: pas de gravité tant qu'on n'a pas lâché
-    if (this.estSurCorde() && !this.lacheCorde) {
+  _appliquerGravite(gardes = []) {
+    // --- GARDE DANS LE TROU ---
+    if (this.estDansTrou) {
       this.vy = 0;
       this.enChute = false;
-      this.alignerSurCorde(); // même alignement que le joueur
+
+      // garde parfaitement centré dans la case du trou
+      if (this.trouCol !== null && this.trouRow !== null) {
+        this.x = this.trouCol * TAILLE_CELLULE;
+        this.y = this.trouRow * TAILLE_CELLULE;
+      }
+
+      this.timerTrou++;
+
+      // après un délai, le garde ressort
+      if (this.timerTrou >= 240) {
+        this.estDansTrou = false;
+        this.timerTrou = 0;
+
+        if (this.trouCol !== null && this.trouRow !== null) {
+          this.x = this.trouCol * TAILLE_CELLULE;
+          this.y = (this.trouRow - 1) * TAILLE_CELLULE;
+        }
+
+        this.trouCol = null;
+        this.trouRow = null;
+      }
+
       return;
     }
 
-    // Dès qu'on n'est plus sur la corde, on reset le flag
+    // --- CORDE ---
+    if (this.estSurCorde() && !this.lacheCorde) {
+      this.vy = 0;
+      this.enChute = false;
+      this.alignerSurCorde();
+      return;
+    }
+
     if (!this.estSurCorde()) {
       this.lacheCorde = false;
     }
 
     // --- ECHELLE ---
-    // IMPORTANT:
-    // On coupe la gravité seulement si le garde "grimpe" réellement cette frame.
-    // Sinon, il peut rester accroché à l'échelle quand il traverse horizontalement.
     if (this.estDansEchelle() && this._grimpeEchelle) {
       this.vy = 0;
       this.enChute = false;
       return;
     }
 
-    // --- SUPPORT (solide OU échelle sous les pieds) ---
-    // On garde les échelles comme support pour éviter qu'un garde tombe
-    // juste parce qu'il marche au-dessus d'une échelle.
-    if (this.estSurSolide()) {
+    // --- SUPPORT ---
+    if (
+      this.estSurSolide(gardes) &&
+      !this.estCompletementAuDessusTrou(gardes)
+    ) {
       const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
-      this.y = rowSous * TAILLE_CELLULE - this.h; // snap sur le dessus
+      this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
       return;
@@ -361,21 +428,50 @@ export class Gardes {
     this.enChute = true;
 
     this.vy += this.gravite;
-    if (this.vy > 8) this.vy = 8; // vitesse terminale
+    if (this.vy > 8) this.vy = 8;
     this.y += this.vy;
 
-    // Collision / correction si on retouche un support pendant la chute
-    if (this.estSurSolide()) {
+    // Si le garde tombe dans un trou
+    if (estTrou(cellule(this.niveau, this.col, this.row))) {
+      const tSousTrou = cellule(this.niveau, this.col, this.row + 1);
+
+      // Si le trou repose sur un vrai support, le garde reste coincé dedans
+      if (estSolide(tSousTrou)) {
+        this.enChute = false;
+        this.vy = 0;
+        this.estDansTrou = true;
+        this.timerTrou = 0;
+
+        this.trouCol = this.col;
+        this.trouRow = this.row;
+
+        this.x = this.trouCol * TAILLE_CELLULE;
+        this.y = this.trouRow * TAILLE_CELLULE;
+
+        this.laisserLingotDansTrou();
+
+        if (this.sons) this.sons.jouer("gardeTombeDansBrique");
+        return;
+      }
+    }
+
+    // collision normale
+    if (
+      this.estSurSolide(gardes) &&
+      !this.estCompletementAuDessusTrou(gardes)
+    ) {
       const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
       this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
+      return;
     }
   }
 
   ramasserLingot() {
     const col = this.col;
     const row = this.row;
+
     const t = cellule(this.niveau, col, row);
 
     if (t === "L" && !this.aLingot) {
@@ -383,6 +479,42 @@ export class Gardes {
       this.aLingot = true;
       this.timerDepotLingot = 0;
     }
+  }
+
+  deposerLingot() {
+    if (!this.aLingot) return;
+    if (this.estDansTrou) return;
+
+    this.timerDepotLingot++;
+
+    if (this.timerDepotLingot < 180) return;
+
+    if (Math.random() < 0.01) {
+      const col = this.col;
+      const row = this.row;
+
+      const tIci = cellule(this.niveau, col, row);
+      const tSous = cellule(this.niveau, col, row + 1);
+
+      if (tIci === "_" && (estSolide(tSous) || estEchelle(tSous))) {
+        this.niveau[row][col] = "L";
+        this.aLingot = false;
+        this.timerDepotLingot = 0;
+      }
+    }
+  }
+
+  laisserLingotDansTrou() {
+    if (!this.aLingot) return;
+
+    const col = this.col;
+    const row = this.row - 1;
+
+    if (row >= 0 && this.niveau[row][col] === "_") {
+      this.niveau[row][col] = "L";
+    }
+
+    this.aLingot = false;
   }
 
   alignerSurCorde() {
@@ -646,11 +778,26 @@ export class Gardes {
         TAILLE_CELLULE,
         TAILLE_CELLULE,
       );
+
+      // Pantalon doré si le garde transporte un lingot
+      if (this.aLingot) {
+        ctx.fillStyle = "#FFD700";
+        ctx.fillRect(dessineX + 8, dessineY + 18, 16, 10);
+
+        ctx.strokeStyle = "#B8860B";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(dessineX + 8, dessineY + 18, 16, 10);
+      }
     } else {
       ctx.fillStyle = "deepskyblue";
       ctx.fillRect(dessineX, dessineY, TAILLE_CELLULE, TAILLE_CELLULE);
       ctx.strokeStyle = "black";
       ctx.strokeRect(dessineX, dessineY, TAILLE_CELLULE, TAILLE_CELLULE);
+
+      if (this.aLingot) {
+        ctx.fillStyle = "#FFD700";
+        ctx.fillRect(dessineX + 8, dessineY + 18, 16, 10);
+      }
     }
   }
 }

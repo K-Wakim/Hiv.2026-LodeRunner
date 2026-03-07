@@ -5,6 +5,7 @@ import {
   dessinerEchelle,
   dessinerCorde,
   dessinerLingot,
+  dessinerTrou,
   dessinerGameOver,
   dessinerVictoire,
 } from "./dessiner.js";
@@ -75,6 +76,7 @@ function dessinerNiveau() {
     ligne.forEach((caseType, x) => {
       if (caseType === "Be") dessinerBeton(ctx, x * 32, y * 32 + 32);
       if (caseType === "B") dessinerBrique(ctx, x * 32, y * 32 + 32);
+      if (caseType === "T") dessinerTrou(ctx, x * 32, y * 32 + 32);
       if (caseType === "C") dessinerCorde(ctx, x * 32, y * 32 + 32);
       if (caseType === "L" && objLingot.complete)
         dessinerLingot(ctx, x * 32, y * 32 + 32, objLingot);
@@ -153,14 +155,14 @@ function update() {
     if (keys.down) joueur.descendreEchelle();
 
     // Gravité/tomber
-    joueur.appliquerGravite();
+    joueur.appliquerGravite(gardes);
 
     joueur.ramasserLingot();
 
     joueur.death(spawnGardes, gardes);
 
     gardes.forEach((garde) => {
-      garde.mettreAJour(joueur);
+      garde.mettreAJour(joueur, gardes);
       garde.dessiner(ctx);
     });
 

@@ -28,6 +28,10 @@ function estCorde(t) {
   return t === CORDE;
 }
 
+function estTrou(t) {
+  return t === "T";
+}
+
 export class Joueur {
   constructor(
     niveau,
@@ -151,21 +155,51 @@ export class Joueur {
     );
   }
 
-  estSurSolide() {
-    // rangée sous les pieds
+  caseSupporteParGarde(col, row, gardes = []) {
+    return gardes.some(
+      (garde) =>
+        garde.estDansTrou && garde.trouCol === col && garde.trouRow === row,
+    );
+  }
+
+  estSurSolide(gardes = []) {
     const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
 
-    // Colonnes que le joueur chevauche (pieds)
     const colG = Math.floor((this.x + 1) / TAILLE_CELLULE);
     const colD = Math.floor((this.x + this.w - 2) / TAILLE_CELLULE);
 
-    // Si au moins une des cellules sous les pieds est support -> supporté
     for (let c = colG; c <= colD; c++) {
       const t = cellule(this.niveau, c, rowSous);
+
       if (estSolide(t) || estEchelle(t)) return true;
+
+      // trou occupé par un garde = support
+      if (t === "T" && this.caseSupporteParGarde(c, rowSous, gardes)) {
+        return true;
+      }
     }
 
     return false;
+  }
+
+  estCompletementAuDessusTrou(gardes = []) {
+    const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
+
+    const colG = Math.floor((this.x + 1) / TAILLE_CELLULE);
+    const colD = Math.floor((this.x + this.w - 2) / TAILLE_CELLULE);
+
+    // doit être complètement sur UNE seule colonne
+    if (colG !== colD) return false;
+
+    const t = cellule(this.niveau, colG, rowSous);
+
+    // si ce n'est pas un trou, ce n'est pas un "vrai" trou à traverser
+    if (!estTrou(t)) return false;
+
+    // si le trou est occupé par un garde coincé, il compte comme un solide
+    if (this.caseSupporteParGarde(colG, rowSous, gardes)) return false;
+
+    return true;
   }
 
   reset(colDepart = 1, rowDepart = 1, scoreInit = SCORE) {
@@ -490,7 +524,7 @@ export class Joueur {
   }
 
   // ---- Gravité / tomber ----
-  appliquerGravite() {
+  appliquerGravite(gardes = []) {
     // --- CORDE ---
     // Sur corde: pas de gravité, sauf si on a "lâché"
     if (this.estSurCorde() && !this.lacheCorde) {
@@ -534,12 +568,12 @@ export class Joueur {
     }
 
     // --- SUPPORT (solide OU échelle sous les pieds) ---
-    if (this.estSurSolide()) {
+    if (this.estSurSolide(gardes) && !this.estCompletementAuDessusTrou(gardes)) {
       const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
-      this.y = rowSous * TAILLE_CELLULE - this.h; // snap
+      this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
-      this._tombeDejaJoue = false; // reset du son de chute
+      this._tombeDejaJoue = false;
       return;
     }
 
@@ -563,7 +597,11 @@ export class Joueur {
     const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
     const tSous = cellule(this.niveau, col, rowSous);
 
-    if (estSolide(tSous) || estEchelle(tSous)) {
+    if (
+      estSolide(tSous) ||
+      estEchelle(tSous) ||
+      (tSous === "T" && this.caseSupporteParGarde(col, rowSous, gardes))
+    ) {
       this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
@@ -597,9 +635,10 @@ export class Joueur {
     const col = this.col + (gauche ? -1 : 1); // Côté vers lequel on se déplace
     const row = this.row + 1; // Brique sous les pieds
     const t = cellule(this.niveau, col, row);
+
     if (t === "B") {
       // Détruire la brique: remplacer la tuile par du vide
-      this.niveau[row][col] = "_";
+      this.niveau[row][col] = "T";
       if (this.sons) this.sons.jouer("detruitBrique");
 
       setTimeout(() => {

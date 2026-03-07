@@ -93,6 +93,43 @@ function dessinerCorde(ctx, x, y) {
   ctx.stroke();
 }
 
+function dessinerTrou(ctx, x, y) {
+  x += 32;
+
+  // base du trou
+  ctx.fillStyle = "#050505";
+  ctx.fillRect(x, y, 32, 32);
+
+  // dégradé principal beaucoup plus visible
+  const degrade = ctx.createLinearGradient(x, y, x, y + 32);
+  degrade.addColorStop(0, "rgba(170, 170, 170, 0.55)");
+  degrade.addColorStop(0.18, "rgba(110, 110, 110, 0.35)");
+  degrade.addColorStop(0.45, "rgba(45, 45, 45, 0.18)");
+  degrade.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = degrade;
+  ctx.fillRect(x, y, 32, 32);
+
+  // petit reflet en haut
+  ctx.fillStyle = "rgba(230, 230, 230, 0.22)";
+  ctx.fillRect(x, y, 32, 2);
+
+  // côtés plus sombres
+  ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+  ctx.fillRect(x, y, 3, 32);
+  ctx.fillRect(x + 29, y, 3, 32);
+
+  // fond du trou plus noir
+  const fond = ctx.createLinearGradient(x, y + 16, x, y + 32);
+  fond.addColorStop(0, "rgba(0, 0, 0, 0)");
+  fond.addColorStop(1, "rgba(0, 0, 0, 0.45)");
+  ctx.fillStyle = fond;
+  ctx.fillRect(x, y + 16, 32, 16);
+
+  // légère teinte bleu-gris au centre pour casser le noir pur
+  ctx.fillStyle = "rgba(70, 90, 110, 0.10)";
+  ctx.fillRect(x + 4, y + 4, 24, 24);
+}
+
 function dessinerLingot(ctx, x, y, objLingot) {
   x += 32;
   ctx.drawImage(objLingot, x, y, 32, 32);
@@ -100,12 +137,11 @@ function dessinerLingot(ctx, x, y, objLingot) {
 
 // --- GAME SCREENS ---
 function spinTitre(ctx, canvas, texte, temps) {
-
   // Fond semi-transparent
   ctx.save();
   ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
   const angle = (temps / 1000) * 2.5;
@@ -124,7 +160,7 @@ function spinTitre(ctx, canvas, texte, temps) {
 
   ctx.restore();
 
-  ctx.save()
+  ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.font = "bold 22px Arial";
@@ -147,7 +183,7 @@ export {
   dessinerEchelle,
   dessinerCorde,
   dessinerLingot,
-
+  dessinerTrou,
   dessinerGameOver,
   dessinerVictoire,
 };
