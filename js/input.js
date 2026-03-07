@@ -22,7 +22,9 @@ export function input(canvas, joueur) {
       e.code === "ArrowLeft" ||
       e.code === "ArrowRight" ||
       e.code === "ArrowUp" ||
-      e.code === "ArrowDown"
+      e.code === "ArrowDown" ||
+      e.code === "KeyX" ||
+      e.code === "KeyC"
     ) {
       keys.jouer = true;
     }

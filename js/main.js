@@ -120,18 +120,15 @@ function update() {
     niveauActuel < 10
   ) {
     niveauActuel++;
-    // For now, we only have one level, so we reset the current level
     const score = joueur.score;
-    joueur.reset(14, 14, score);
-    //etatJeu = "idle";
-    //keys.jouer = false;
+    joueur.reset(14, 14, score);`
+    `
     tempsInitial = null; // Reset timer for next level
+    tempsEcoule = "00:00";
     spawnGardes(); // Spawn new guards for the next level
-    /*
-    if (keys.jouer) {
-      etatJeu = "play";
-    }
-      */
+
+    keys.jouer = false;
+    return;
   }
 
   // Conditions de victoire
@@ -159,7 +156,15 @@ function update() {
 
     joueur.ramasserLingot();
 
+    const vieAvant = joueur.vie;
     joueur.death(spawnGardes, gardes);
+
+    if (joueur.vie < vieAvant) {
+      keys.jouer = false;
+      tempsInitial = null;
+      tempsEcoule = "00:00";
+      return;
+    }
 
     gardes.forEach((garde) => {
       garde.mettreAJour(joueur, gardes);
