@@ -14,8 +14,8 @@ export function input(canvas, joueur) {
     if (e.code === "ArrowRight") keys.right = true;
     if (e.code === "ArrowUp") keys.up = true;
     if (e.code === "ArrowDown") keys.down = true;
-    if (e.code === "KeyX") joueur.detruitBrique(true);
-    if (e.code === "KeyC") joueur.detruitBrique(false);
+    if (e.code === "KeyZ") joueur.detruitBrique(true);
+    if (e.code === "KeyX") joueur.detruitBrique(false);
     if (e.key === "r" || e.key === "R") location.reload();
 
     if (
