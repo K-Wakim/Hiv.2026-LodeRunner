@@ -72,6 +72,10 @@ export class Gardes {
     this.lacheCorde = false;
     this._grimpeEchelle = false;
 
+    // Lingot
+    this.aLingot = false;
+    this.timerDepotLingot = 0;
+
     // IA
     this.dirH = 0; // -1 gauche, 0 rien, 1 droite
     this.dirV = 0; // -1 haut, 0 rien, 1 bas
@@ -306,6 +310,8 @@ export class Gardes {
     this._deplacer(joueur);
     this._appliquerGravite();
 
+    this.ramasserLingot(); 
+
     this.mettreAJourAnimation();
   }
 
@@ -364,6 +370,18 @@ export class Gardes {
       this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
       this.enChute = false;
+    }
+  }
+
+  ramasserLingot() {
+    const col = this.col;
+    const row = this.row;
+    const t = cellule(this.niveau, col, row);
+
+    if (t === "L" && !this.aLingot) {
+      this.niveau[row][col] = "_";
+      this.aLingot = true;
+      this.timerDepotLingot = 0;
     }
   }
 
