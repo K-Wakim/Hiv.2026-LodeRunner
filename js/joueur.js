@@ -630,6 +630,7 @@ export class Joueur {
 
   // ---- Ramasser lingot ----
   ramasserLingot() {
+    if (!this.peutControler()) return;
     const col = this.col;
     const row = this.row;
     const t = cellule(this.niveau, col, row);
