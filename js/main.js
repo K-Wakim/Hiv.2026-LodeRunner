@@ -6,6 +6,8 @@ import {
   dessinerCorde,
   dessinerLingot,
   dessinerTrou,
+  dessinerLaserBrique,
+  dessinerAnimationBrique,
   dessinerGameOver,
   dessinerVictoire,
 } from "./dessiner.js";
@@ -92,8 +94,33 @@ function dessinerNiveau() {
 
 function redessiner() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   dessinerNiveau();
+
+  joueur.animBriques.forEach((anim) => {
+    const progress = anim.timer / anim.duree;
+    dessinerAnimationBrique(
+      ctx,
+      anim.col * 32,
+      anim.row * 32 + 32,
+      progress,
+      anim.type === "respawn",
+    );
+  });
+
+  if (joueur.animTir) {
+    dessinerLaserBrique(
+      ctx,
+      joueur.x,
+      joueur.y + 32,
+      joueur.animTir.col,
+      joueur.animTir.row,
+      joueur.animTir.gauche,
+    );
+  }
+
   joueur.dessiner(ctx);
+
   gardes.forEach((garde) => garde.dessiner(ctx));
 }
 
@@ -121,8 +148,9 @@ function update() {
   ) {
     niveauActuel++;
     const score = joueur.score;
-    joueur.reset(14, 14, score);`
+    joueur.reset(14, 14, score);
     `
+    `;
     tempsInitial = null; // Reset timer for next level
     tempsEcoule = "00:00";
     spawnGardes(); // Spawn new guards for the next level
@@ -183,7 +211,9 @@ function update() {
 
     tempsEcoule = animerHorloge(ctx, canvas, tempsInitial);
   }
+
   joueur.mettreAJourAnimation(keys);
+  joueur.mettreAJourAnimBriques();
 
   redessiner();
 }

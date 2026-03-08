@@ -79,6 +79,10 @@ export class Joueur {
     // Preload les sprites
     this.sprites = this.chargerSprites();
 
+    // Animation brique
+    this.animTir = null;
+    this.animBriques = [];
+
     // Image courante
     this.img = this.sprites.idle;
     this.imgOK = true;
@@ -568,7 +572,10 @@ export class Joueur {
     }
 
     // --- SUPPORT (solide OU échelle sous les pieds) ---
-    if (this.estSurSolide(gardes) && !this.estCompletementAuDessusTrou(gardes)) {
+    if (
+      this.estSurSolide(gardes) &&
+      !this.estCompletementAuDessusTrou(gardes)
+    ) {
       const rowSous = Math.floor((this.y + this.h) / TAILLE_CELLULE);
       this.y = rowSous * TAILLE_CELLULE - this.h;
       this.vy = 0;
@@ -632,26 +639,96 @@ export class Joueur {
 
   // ---- Détruire brique ----
   detruitBrique(gauche) {
-    const col = this.col + (gauche ? -1 : 1); // Côté vers lequel on se déplace
-    const row = this.row + 1; // Brique sous les pieds
+    const col = this.col + (gauche ? -1 : 1);
+    const row = this.row + 1;
 
     const t = cellule(this.niveau, col, row);
     const tDessus = cellule(this.niveau, col, row - 1);
 
+    // on ne détruit qu'une brique
     if (t !== "B") return;
 
+    // interdit si objet au-dessus
     if (tDessus === "L" || tDessus === "E" || tDessus === "C") return;
 
-    if (t === "B") {
-      // Détruire la brique: remplacer la tuile par du vide
+    // snap du joueur au centre de sa cellule
+    this.snapXSurColonne(this.col);
+
+    // image fixe selon le côté détruit
+    if (gauche) {
+      this.dir = "gauche";
+      this.img = this.sprites.runLeft[0]; // RunnerGauche1
+    } else {
+      this.dir = "droite";
+      this.img = this.sprites.runRight[0]; // RunnerDroite1
+    }
+
+    this.setEtat("idle");
+    this.animIndex = 0;
+    this.animTimer = 0;
+    this.forceIdle = false;
+
+    // animation laser
+    this.animTir = {
+      gauche,
+      col,
+      row,
+      timer: 0,
+      duree: 45,
+    };
+
+    // animation destruction
+    this.animBriques.push({
+      col,
+      row,
+      type: "break",
+      timer: 0,
+      duree: 45,
+      terminee: false,
+    });
+
+    if (this.sons) this.sons.jouer("detruitBrique");
+
+    // le trou apparait après l'animation
+    setTimeout(() => {
       this.niveau[row][col] = "T";
-      if (this.sons) this.sons.jouer("detruitBrique");
+    }, 14 * 16);
+
+    // respawn après 8 secondes
+    setTimeout(() => {
+      this.animBriques.push({
+        col,
+        row,
+        type: "respawn",
+        timer: 0,
+        duree: 14,
+        terminee: false,
+      });
+
+      if (this.sons) this.sons.jouer("briqueRespawn");
 
       setTimeout(() => {
         this.niveau[row][col] = "B";
-        if (this.sons) this.sons.jouer("briqueRespawn");
-      }, 8000);
+      }, 14 * 16);
+    }, 8000);
+  }
+
+  mettreAJourAnimBriques() {
+    if (this.animTir) {
+      this.animTir.timer++;
+      if (this.animTir.timer >= this.animTir.duree) {
+        this.animTir = null;
+      }
     }
+
+    this.animBriques.forEach((anim) => {
+      anim.timer++;
+      if (anim.timer >= anim.duree) {
+        anim.terminee = true;
+      }
+    });
+
+    this.animBriques = this.animBriques.filter((anim) => !anim.terminee);
   }
 
   // A COMPLÉTER

@@ -135,6 +135,110 @@ function dessinerLingot(ctx, x, y, objLingot) {
   ctx.drawImage(objLingot, x, y, 32, 32);
 }
 
+function dessinerLaserBrique(ctx, joueurX, joueurY, col, row, gauche) {
+  const origineX = joueurX + 32 + (gauche ? 8 : 24);
+  const origineY = joueurY + 18;
+
+  // coins du haut de la brique
+  const coinGaucheX = col * 32 + 32;
+  const coinDroitX = col * 32 + 32 + 32;
+  const coinHautY = row * 32 + 32;
+
+  ctx.save();
+
+  ctx.beginPath();
+  ctx.moveTo(origineX, origineY);
+  ctx.lineTo(coinGaucheX, coinHautY);
+  ctx.lineTo(coinDroitX, coinHautY);
+  ctx.closePath();
+
+  const degrade = ctx.createLinearGradient(
+    origineX,
+    origineY,
+    (coinGaucheX + coinDroitX) / 2,
+    coinHautY
+  );
+  degrade.addColorStop(0, "rgba(255,255,255,0.85)");
+  degrade.addColorStop(0.35, "rgba(210,210,210,0.45)");
+  degrade.addColorStop(1, "rgba(120,120,120,0.08)");
+
+  ctx.fillStyle = degrade;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function dessinerAnimationBrique(ctx, x, y, progress, reverse = false) {
+  x += 32;
+
+  const p = reverse ? 1 - progress : progress;
+
+  // fond de brique partiellement visible
+  ctx.save();
+  ctx.globalAlpha = 1 - p * 0.9;
+
+  const taillePatterne = 32;
+  const hauteurBrique = 16;
+  const ligneWidth = 3;
+
+  ctx.fillStyle = "#FF0000";
+  ctx.fillRect(x, y, taillePatterne, hauteurBrique - ligneWidth);
+  ctx.fillRect(
+    x,
+    y + hauteurBrique,
+    taillePatterne / 2 - ligneWidth,
+    hauteurBrique - ligneWidth,
+  );
+  ctx.fillRect(
+    x + taillePatterne / 2,
+    y + hauteurBrique,
+    taillePatterne / 2 - ligneWidth,
+    hauteurBrique - ligneWidth,
+  );
+
+  ctx.fillStyle = "#808080";
+  ctx.fillRect(x, y + hauteurBrique - ligneWidth, taillePatterne, ligneWidth);
+  ctx.fillRect(x, y + taillePatterne - ligneWidth, taillePatterne, ligneWidth);
+  ctx.fillRect(x, y, ligneWidth, taillePatterne);
+  ctx.fillRect(x + taillePatterne - ligneWidth, y, ligneWidth, taillePatterne);
+  ctx.fillRect(
+    x + taillePatterne / 2 - ligneWidth,
+    y + hauteurBrique,
+    ligneWidth,
+    hauteurBrique,
+  );
+
+  ctx.restore();
+
+  // petits fragments style "Minecraft"
+  const fragments = [
+    [2, 2],
+    [10, 3],
+    [18, 2],
+    [25, 4],
+    [5, 12],
+    [14, 11],
+    [22, 10],
+    [27, 14],
+    [3, 22],
+    [11, 20],
+    [19, 23],
+    [26, 21],
+  ];
+
+  const visibles = Math.floor((1 - p) * fragments.length);
+
+  ctx.save();
+  for (let i = 0; i < visibles; i++) {
+    const fx = fragments[i][0];
+    const fy = fragments[i][1];
+
+    ctx.fillStyle = i % 2 === 0 ? "#FF0000" : "#808080";
+    ctx.fillRect(x + fx, y + fy, 4, 4);
+  }
+  ctx.restore();
+}
+
 // --- GAME SCREENS ---
 function spinTitre(ctx, canvas, texte, temps) {
   // Fond semi-transparent
@@ -184,6 +288,8 @@ export {
   dessinerCorde,
   dessinerLingot,
   dessinerTrou,
+  dessinerLaserBrique,
+  dessinerAnimationBrique,
   dessinerGameOver,
   dessinerVictoire,
 };
