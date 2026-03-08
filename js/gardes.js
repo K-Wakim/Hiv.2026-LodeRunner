@@ -118,6 +118,9 @@ export class Gardes {
     this.vitesseRespawn = 2;
 
     this.timerInvincible = 0; // test pour voir si on peut éviter les respawns multiples en rendant le garde temporairement invincible après sa mort, au lieu de le retirer immédiatement de la liste des gardes actifs
+
+    this._respawnCol = this._colInit;
+    this._respawnRow = 1;
   }
 
   // ---- Centre / grille ----
@@ -868,14 +871,24 @@ export class Gardes {
     if (this.niveau[this.row]?.[this.col] === "B" && !dansCaseInit) {
       joueur.score += 75;
       this.estMort = true;
+
+      const cellsDisponibles = this.niveau[1]
+        .map((type, col) => ({ type, col }))
+        .filter(
+          ({ type, col }) => type === "_" && this.niveau[2]?.[col] === "B",
+        );
+      const cible =
+        cellsDisponibles[Math.floor(Math.random() * cellsDisponibles.length)];
+      this._respawnCol = cible?.col ?? this._colInit;
+      this._respawnRow = 1;
     }
   }
 
   respawn(gardes) {
     if (!this.estMort) return;
 
-    const targetX = this._colInit * TAILLE_CELLULE;
-    const targetY = this._rowInit * TAILLE_CELLULE;
+    const targetX = this._respawnCol * TAILLE_CELLULE;
+    const targetY = this._respawnRow * TAILLE_CELLULE;
 
     const dx = targetX - this.x;
     const dy = targetY - this.y;

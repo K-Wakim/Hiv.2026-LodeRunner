@@ -185,16 +185,6 @@ function update() {
 
     joueur.ramasserLingot();
 
-    const vieAvant = joueur.vie;
-    joueur.death(spawnGardes, gardes);
-
-    if (joueur.vie < vieAvant) {
-      keys.jouer = false;
-      tempsInitial = null;
-      tempsEcoule = "00:00";
-      return;
-    }
-
     gardes.forEach((garde) => {
       garde.mettreAJour(gardes);
       garde.death(gardes);
@@ -216,6 +206,15 @@ function update() {
     if (tempsInitial === null) tempsInitial = Date.now();
 
     tempsEcoule = animerHorloge(ctx, canvas, tempsInitial);
+  }
+
+  const vieAvant = joueur.vie;
+  joueur.death(spawnGardes, gardes);
+
+  if (joueur.vie < vieAvant) {
+    keys.jouer = false;
+    tempsInitial = null;
+    tempsEcoule = "00:00";
   }
 
   joueur.mettreAJourAnimation(keys);

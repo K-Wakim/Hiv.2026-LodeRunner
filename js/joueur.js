@@ -88,6 +88,9 @@ export class Joueur {
     this.imgOK = true;
     this.img.onload = () => {};
     this.img.onerror = () => {};
+
+    this.estMort = false;
+    this.vitesseRespawn = 2;
   }
 
   // ---- Centre / grille ----
@@ -529,6 +532,7 @@ export class Joueur {
 
   // ---- Gravité / tomber ----
   appliquerGravite(gardes = []) {
+    if (this.estMort) return;
     // --- CORDE ---
     // Sur corde: pas de gravité, sauf si on a "lâché"
     if (this.estSurCorde() && !this.lacheCorde) {
@@ -733,14 +737,33 @@ export class Joueur {
 
   // A COMPLÉTER
   // ---- Mort ----
-  death(func, gardes) {
+  death(func, gardes, canvas) {
+    if (this.estMort) {
+      this.y -= this.vitesseRespawn;
+
+      if (this.y + this.h <= 0) {
+        this.estMort = false;
+        this._mortLock = false;
+        this.vie -= 1;
+        this.score = this.scoreInit;
+        this.nbrLingots = 0;
+        this.x = 14 * TAILLE_CELLULE;
+        this.y = 14 * TAILLE_CELLULE;
+        this.vy = 0;
+        this.enChute = false;
+        this.niveau = this.niveauInit.map((row) => [...row]);
+        func();
+      }
+      return;
+    }
+
     const surBrique = cellule(this.niveau, this.col, this.row) === "B";
     let surGarde = false;
 
     gardes.forEach((garde) => {
       const gardeCol = garde.col;
       const gardeRow = garde.row;
-      if (gardeCol === this.col && gardeRow === this.row) {
+      if (gardeCol === this.col && gardeRow === this.row && !garde.estMort) {
         surGarde = true;
       }
     });
@@ -753,20 +776,8 @@ export class Joueur {
     if (this._mortLock) return;
 
     this._mortLock = true;
-
+    this.estMort = true;
     if (this.sons) this.sons.jouer("mort");
-
-    this.vie = this.vie - 1;
-    this.score = this.scoreInit;
-    this.nbrLingots = 0;
-
-    this.x = 14 * TAILLE_CELLULE;
-    this.y = 14 * TAILLE_CELLULE;
-
-    this.niveau = this.niveauInit.map((row) => [...row]);
-    this.nbrLingots = 0;
-
-    func();
   }
 
   // ---- Dessin ----
