@@ -389,7 +389,7 @@ export class Gardes {
         this.timerTrou = 0;
 
         if (this.trouCol !== null && this.trouRow !== null) {
-          this.x = this.trouCol * TAILLE_CELLULE;
+          this.x = this.trouCol * TAILLE_CELLULE - TAILLE_CELLULE;
           this.y = (this.trouRow - 1) * TAILLE_CELLULE;
         }
 
@@ -472,6 +472,21 @@ export class Gardes {
       this.vy = 0;
       this.enChute = false;
       return;
+    }
+
+    if (this.niveau[this.row]?.[this.col] === "T") {
+      this.estDansTrou = true;
+      this.timerTrou = 0;
+
+      this.trouCol = this.col;
+      this.trouRow = this.row;
+
+      this.x = this.trouCol * TAILLE_CELLULE;
+      this.y = this.trouRow * TAILLE_CELLULE;
+
+      this.laisserLingotDansTrou();
+
+      if (this.sons) this.sons.jouer("gardeTombeDansBrique");
     }
   }
 
@@ -617,6 +632,7 @@ export class Gardes {
   _deplacer(joueur) {
     // Pas de déplacement volontaire pendant la chute
     if (this.enChute) return;
+    if (this.estDansTrou) return;
 
     const col = this.col;
     const row = this.row;
