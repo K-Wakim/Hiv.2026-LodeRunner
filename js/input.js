@@ -18,14 +18,7 @@ export function input(canvas, joueur) {
     if (e.code === "KeyX") joueur.detruitBrique(false);
     if (e.key === "r" || e.key === "R") location.reload();
 
-    if (
-      e.code === "ArrowLeft" ||
-      e.code === "ArrowRight" ||
-      e.code === "ArrowUp" ||
-      e.code === "ArrowDown" ||
-      e.code === "KeyX" ||
-      e.code === "KeyC"
-    ) {
+    if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
       keys.jouer = true;
     }
 
