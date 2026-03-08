@@ -14,6 +14,8 @@ const VITESSE_GARDE = 1; // Pixels par frame
 const DELAI_DECISION = 15; // Frames entre chaque décision de roaming
 const TOLERANCE_VERTICALE = 1; // Écart de rangées minimum avant de chercher une échelle
 
+let joueur = null;
+
 function cellule(niveau, col, row) {
   if (row < 0 || row >= niveau.length) return "Be";
   if (col < 0 || col >= niveau[0].length) return "Be";
@@ -56,14 +58,17 @@ function celluleAleatoire(niv, occupees = new Set()) {
 }
 
 export class Gardes {
-  constructor(niveau, srcImage, sons, occupees = new Set()) {
+  constructor(niveau, srcImage, sons, objJoueur, occupees = new Set()) {
     const cell = celluleAleatoire(niveau, occupees);
 
+    joueur = objJoueur;
+
     this.niveau = niveau;
-    this._col = cell?.col ?? 1;
-    this._row = cell?.row ?? 1;
-    this.x = this._col * TAILLE_CELLULE;
-    this.y = this._row * TAILLE_CELLULE;
+    this.niveauInit = niveau.map((row) => [...row]);
+    this._colInit = cell?.col ?? 1;
+    this._rowInit = cell?.row ?? 1;
+    this.x = this._colInit * TAILLE_CELLULE;
+    this.y = this._rowInit * TAILLE_CELLULE;
 
     this.w = TAILLE_CELLULE;
     this.h = TAILLE_CELLULE;
@@ -108,6 +113,11 @@ export class Gardes {
     this.imgOK = true;
 
     this.sons = sons;
+
+    this.estMort = false; // pour éviter les respawns multiples avant que le garde soit retiré de la liste des gardes actifs
+    this.vitesseRespawn = 2;
+
+    this.timerInvincible = 0; // test pour voir si on peut éviter les respawns multiples en rendant le garde temporairement invincible après sa mort, au lieu de le retirer immédiatement de la liste des gardes actifs
   }
 
   // ---- Centre / grille ----
@@ -274,6 +284,7 @@ export class Gardes {
   }
 
   mettreAJourAnimation() {
+    if (this.estMort) return;
     if (this.dirH < 0) this.dir = "gauche";
     else if (this.dirH > 0) this.dir = "droite";
 
@@ -349,6 +360,35 @@ export class Gardes {
     }
   }
 
+  /**
+   * Finds the closest valid cell to (fromCol, fromRow):
+   * a "_" cell with a solid "B" directly beneath it,
+   * scanning outward in a spiral-like column order.
+   */
+  _trouverCelluleValideProche(fromCol, fromRow) {
+    const nRows = this.niveau.length;
+    const nCols = this.niveau[0].length;
+    let bestCell = null;
+    let bestDist = Number.MAX_SAFE_INTEGER;
+
+    for (let row = 0; row < nRows - 1; row++) {
+      for (let col = 0; col < nCols; col++) {
+        if (
+          this.niveau[row][col] === "_" &&
+          this.niveau[row + 1]?.[col] === "B"
+        ) {
+          const dist = Math.abs(col - fromCol) + Math.abs(row - fromRow);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestCell = { col, row };
+          }
+        }
+      }
+    }
+
+    return bestCell;
+  }
+
   // A+ explication
   // ---- Mise à jour (IA + physique) ----
 
@@ -356,11 +396,12 @@ export class Gardes {
    * Point d'entrée appelé chaque frame depuis main.js.
    * Adapté de deplacerGarde() + graviteGardes() du projet de référence.
    */
-  mettreAJour(joueur, gardes) {
+  mettreAJour(gardes) {
+    if (this.estMort) return;
     this._grimpeEchelle = false;
     this._tousLesGardes = gardes;
 
-    this._deplacer(joueur);
+    this._deplacer();
     this._appliquerGravite(gardes);
 
     this.ramasserLingot();
@@ -388,8 +429,13 @@ export class Gardes {
         this.estDansTrou = false;
         this.timerTrou = 0;
 
+        let exitCol = this.trouCol - 1;
+        let exitRow = this.trouRow - 1;
+
         if (this.trouCol !== null && this.trouRow !== null) {
-          this.x = this.trouCol * TAILLE_CELLULE - TAILLE_CELLULE;
+          this.x = this.celluleOccupeeParGarde(exitCol, exitRow, gardes)
+            ? this.trouCol * TAILLE_CELLULE + TAILLE_CELLULE
+            : this.trouCol * TAILLE_CELLULE - TAILLE_CELLULE;
           this.y = (this.trouRow - 1) * TAILLE_CELLULE;
         }
 
@@ -458,6 +504,7 @@ export class Gardes {
         this.laisserLingotDansTrou();
 
         if (this.sons) this.sons.jouer("gardeTombeDansBrique");
+        joueur.score += 75;
         return;
       }
     }
@@ -629,7 +676,7 @@ export class Gardes {
    *     directement vers lui en horizontal.
    *  4. Collisions horizontales contre les cellules solides.
    */
-  _deplacer(joueur) {
+  _deplacer() {
     // Pas de déplacement volontaire pendant la chute
     if (this.enChute) return;
     if (this.estDansTrou) return;
@@ -802,12 +849,63 @@ export class Gardes {
     } else {
       this.dirV = 0;
     }
-
     if (surCorde && joueur.row > this.row) {
       this.lacherCorde();
     }
   }
 
+  death(gardes) {
+    if (this.estMort) return;
+
+    const dansCaseInit =
+      this.col === this._colInit && this.row === this._rowInit;
+
+    if (this.timerInvincible > 0) {
+      this.timerInvincible--;
+      return;
+    }
+
+    if (this.niveau[this.row]?.[this.col] === "B" && !dansCaseInit) {
+      joueur.score += 75;
+      this.estMort = true;
+    }
+  }
+
+  respawn(gardes) {
+    if (!this.estMort) return;
+
+    const targetX = this._colInit * TAILLE_CELLULE;
+    const targetY = this._rowInit * TAILLE_CELLULE;
+
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist <= this.vitesseRespawn) {
+      this.x = targetX;
+      this.y = targetY;
+      this.estMort = false;
+      this.vy = 0;
+      this.enChute = false;
+      this.lacheCorde = false;
+      this._grimpeEchelle = false;
+      this.tuileBut = null;
+      this.dirH = 0;
+      this.dirV = 0;
+      this.estDansTrou = false; // ← add
+      this.timerTrou = 0; // ← add
+      this.trouCol = null; // ← add
+      this.trouRow = null; // ← add
+      this.timerInvincible = 60;
+    } else {
+      this.x += (dx / dist) * this.vitesseRespawn;
+      this.y += (dy / dist) * this.vitesseRespawn;
+    }
+  }
+
+  celluleOccupeeParGarde(col, row, gardes) {
+    return gardes.some((g) => g !== this && g.col === col && g.row === row);
+  }
   // ---- Dessin ----
   dessiner(ctx) {
     const dessineX = this.x + OFFSET_BORDURE;

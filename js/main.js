@@ -55,6 +55,7 @@ const joueur = new Joueur(
 // cellules qu'un garde est deja spawn dans
 const cellOccupees = new Set();
 const gardes = [];
+const tousLesGardes = []; // celui-là inclue les gardes morts pour éviter les respawns multiples
 
 spawnGardes();
 
@@ -195,8 +196,13 @@ function update() {
     }
 
     gardes.forEach((garde) => {
-      garde.mettreAJour(joueur, gardes);
+      garde.mettreAJour(gardes);
+      garde.death(gardes);
       garde.dessiner(ctx);
+    });
+
+    tousLesGardes.forEach((garde) => {
+      garde.respawn(gardes);
     });
 
     // échelle pour passer au prochaine niveau
@@ -219,8 +225,9 @@ function update() {
 }
 
 function spawnGardes() {
-  if (gardes.length > 0) {
+  if (gardes.length > 0 || tousLesGardes.length > 0) {
     gardes.length = 0; // Remove existing guards
+    tousLesGardes.length = 0; // Clear all guards including dead ones
     cellOccupees.clear(); // Clear occupied cells
   }
   for (let i = 0; i < 2 + niveauActuel; i++) {
@@ -228,9 +235,11 @@ function spawnGardes() {
       joueur.niveau,
       "assets/images/imgGardes/BaseGarde.png",
       sons,
+      joueur,
       cellOccupees,
     );
     gardes.push(g);
+    tousLesGardes.push(g);
     cellOccupees.add(`${g.row},${g.col}`);
   }
 }
