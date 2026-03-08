@@ -249,7 +249,7 @@ export class Joueur {
   }
 
   peutControler() {
-    return !this.enChute;
+    return !this.enChute && !this.estMort;
   }
 
   // retourne vrai si le rectangle du joueur chevauche la colonne "col"
@@ -338,6 +338,8 @@ export class Joueur {
   }
 
   mettreAJourAnimation(keys) {
+    if (this.estMort) return;
+
     // Direction
     if (keys.left) this.dir = "gauche";
     else if (keys.right) this.dir = "droite";
@@ -413,7 +415,7 @@ export class Joueur {
 
   // ---- Mouvement horizontal ----
   deplacementHorizontal(direction, keys = null) {
-    if (this.enChute) return;
+    if (!this.peutControler()) return;
 
     const grimpe = keys && (keys.up || keys.down);
 
@@ -458,7 +460,7 @@ export class Joueur {
 
   // ---- Monter / Descendre échelle ----
   monterEchelle() {
-    if (this.enChute) return;
+    if (!this.peutControler()) return;
 
     const col = this.col;
     const row = this.row;
@@ -491,7 +493,7 @@ export class Joueur {
   }
 
   descendreEchelle() {
-    if (this.enChute) return;
+    if (!this.peutControler()) return;
 
     const col = this.col;
     const row = this.row;
@@ -520,7 +522,7 @@ export class Joueur {
   }
 
   lacherCorde() {
-    if (this.enChute) return;
+    if (!this.peutControler()) return;
 
     if (this.estSurCorde() && !this.estDansEchelle()) {
       this.lacheCorde = true;
@@ -643,6 +645,8 @@ export class Joueur {
 
   // ---- Détruire brique ----
   detruitBrique(gauche) {
+    if (!this.peutControler()) return;
+
     const col = this.col + (gauche ? -1 : 1);
     const row = this.row + 1;
 
@@ -777,6 +781,15 @@ export class Joueur {
 
     this._mortLock = true;
     this.estMort = true;
+    this.vy = 0;
+    this.enChute = false;
+    this.lacheCorde = false;
+    this.colEchelleSortie = null;
+
+    this.setEtat("idle");
+    this.animIndex = 0;
+    this.animTimer = 0;
+    this.img = this.sprites.idle;
     if (this.sons) this.sons.jouer("mort");
   }
 
