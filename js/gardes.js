@@ -665,6 +665,14 @@ export class Gardes {
     }
   }
 
+  cheminHorizontalBloque(niveau, fromCol, toCol, row) {
+    const step = toCol > fromCol ? 1 : -1;
+    for (let c = fromCol + step; c !== toCol + step; c += step) {
+      if (estSolide(cellule(niveau, c, row))) return true;
+    }
+    return false;
+  }
+
   /**
    * IA de déplacement du garde vers le joueur.
    * Adapté de deplacerGarde() du projet de référence.
@@ -726,7 +734,10 @@ export class Gardes {
 
         if (possible) {
           const dist = Math.abs(c - col);
-          if (dist < minDist) {
+          if (
+            dist < minDist &&
+            !this.cheminHorizontalBloque(this.niveau, col, c, row)
+          ) {
             minDist = dist;
             meilleurCol = c;
           }
