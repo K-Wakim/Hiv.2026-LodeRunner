@@ -109,7 +109,7 @@ export class Gardes {
     this.sprites = this.chargerSprites();
 
     // Image courante
-    this.img = this.sprites.idle;
+    this.img = this.sprites.normal.idle;
     this.imgOK = true;
 
     this.sons = sons;
@@ -238,43 +238,84 @@ export class Gardes {
 
   chargerSprites() {
     const basePath = "assets/images/imgGardes/";
+    const goldPath = "assets/images/imgGardesGold/";
 
     return {
-      idle: this.chargerImage(basePath + "BaseGarde.png"),
+      normal: {
+        idle: this.chargerImage(basePath + "BaseGarde.png"),
 
-      runRight: [
-        this.chargerImage(basePath + "GardeDroite1.png"),
-        this.chargerImage(basePath + "GardeDroite2.png"),
-        this.chargerImage(basePath + "GardeDroite3.png"),
-      ],
+        runRight: [
+          this.chargerImage(basePath + "GardeDroite1.png"),
+          this.chargerImage(basePath + "GardeDroite2.png"),
+          this.chargerImage(basePath + "GardeDroite3.png"),
+        ],
 
-      runLeft: [
-        this.chargerImage(basePath + "GardeGauche1.png"),
-        this.chargerImage(basePath + "GardeGauche2.png"),
-        this.chargerImage(basePath + "GardeGauche3.png"),
-      ],
+        runLeft: [
+          this.chargerImage(basePath + "GardeGauche1.png"),
+          this.chargerImage(basePath + "GardeGauche2.png"),
+          this.chargerImage(basePath + "GardeGauche3.png"),
+        ],
 
-      climb: [
-        this.chargerImage(basePath + "GardeEchelle1.png"),
-        this.chargerImage(basePath + "GardeEchelle2.png"),
-      ],
+        climb: [
+          this.chargerImage(basePath + "GardeEchelle1.png"),
+          this.chargerImage(basePath + "GardeEchelle2.png"),
+        ],
 
-      ropeRight: [
-        this.chargerImage(basePath + "GardeCordeDroite1.png"),
-        this.chargerImage(basePath + "GardeCordeDroite2.png"),
-        this.chargerImage(basePath + "GardeCordeDroite3.png"),
-      ],
+        ropeRight: [
+          this.chargerImage(basePath + "GardeCordeDroite1.png"),
+          this.chargerImage(basePath + "GardeCordeDroite2.png"),
+          this.chargerImage(basePath + "GardeCordeDroite3.png"),
+        ],
 
-      ropeLeft: [
-        this.chargerImage(basePath + "GardeCordeGauche1.png"),
-        this.chargerImage(basePath + "GardeCordeGauche2.png"),
-        this.chargerImage(basePath + "GardeCordeGauche3.png"),
-      ],
+        ropeLeft: [
+          this.chargerImage(basePath + "GardeCordeGauche1.png"),
+          this.chargerImage(basePath + "GardeCordeGauche2.png"),
+          this.chargerImage(basePath + "GardeCordeGauche3.png"),
+        ],
 
-      fall: [
-        this.chargerImage(basePath + "GardeDrop1.png"),
-        this.chargerImage(basePath + "GardeDrop2.png"),
-      ],
+        fall: [
+          this.chargerImage(basePath + "GardeDrop1.png"),
+          this.chargerImage(basePath + "GardeDrop2.png"),
+        ],
+      },
+
+      gold: {
+        idle: this.chargerImage(goldPath + "BaseGardeGold.png"),
+
+        runRight: [
+          this.chargerImage(goldPath + "GardeDroiteGold1.png"),
+          this.chargerImage(goldPath + "GardeDroiteGold2.png"),
+          this.chargerImage(goldPath + "GardeDroiteGold3.png"),
+        ],
+
+        runLeft: [
+          this.chargerImage(goldPath + "GardeGaucheGold1.png"),
+          this.chargerImage(goldPath + "GardeGaucheGold2.png"),
+          this.chargerImage(goldPath + "GardeGaucheGold3.png"),
+        ],
+
+        climb: [
+          this.chargerImage(goldPath + "GardeEchelleGold1.png"),
+          this.chargerImage(goldPath + "GardeEchelleGold2.png"),
+        ],
+
+        ropeRight: [
+          this.chargerImage(goldPath + "GardeCordeDroiteGold1.png"),
+          this.chargerImage(goldPath + "GardeCordeDroiteGold2.png"),
+          this.chargerImage(goldPath + "GardeCordeDroiteGold3.png"),
+        ],
+
+        ropeLeft: [
+          this.chargerImage(goldPath + "GardeCordeGaucheGold1.png"),
+          this.chargerImage(goldPath + "GardeCordeGaucheGold2.png"),
+          this.chargerImage(goldPath + "GardeCordeGaucheGold3.png"),
+        ],
+
+        fall: [
+          this.chargerImage(goldPath + "GardeDropGold1.png"),
+          this.chargerImage(goldPath + "GardeDropGold2.png"),
+        ],
+      },
     };
   }
 
@@ -288,15 +329,17 @@ export class Gardes {
 
   mettreAJourAnimation() {
     if (this.estMort) return;
+
     if (this.dirH < 0) this.dir = "gauche";
     else if (this.dirH > 0) this.dir = "droite";
+
+    const spriteSet = this.aLingot ? this.sprites.gold : this.sprites.normal;
 
     const surCorde = this.estSurCorde() && !this.lacheCorde;
     const dansEchelle = this.estDansEchelle();
     const bougeH = this.dirH !== 0;
     const bougeV = this.dirV !== 0;
 
-    // Choisir état
     if (this.enChute) {
       this.setEtat("fall");
     } else if (surCorde) {
@@ -307,7 +350,7 @@ export class Gardes {
       this.setEtat("run");
     } else {
       this.setEtat("idle");
-      this.img = this.sprites.idle;
+      this.img = spriteSet.idle;
       return;
     }
 
@@ -315,27 +358,25 @@ export class Gardes {
     let doitAnimer = true;
 
     if (this.etat === "run") {
-      frames =
-        this.dir === "gauche" ? this.sprites.runLeft : this.sprites.runRight;
+      frames = this.dir === "gauche" ? spriteSet.runLeft : spriteSet.runRight;
       this.animDelay = 8;
       doitAnimer = bougeH;
     } else if (this.etat === "climb") {
-      frames = this.sprites.climb;
+      frames = spriteSet.climb;
       this.animDelay = 10;
       doitAnimer = bougeV;
     } else if (this.etat === "rope") {
-      frames =
-        this.dir === "gauche" ? this.sprites.ropeLeft : this.sprites.ropeRight;
+      frames = this.dir === "gauche" ? spriteSet.ropeLeft : spriteSet.ropeRight;
       this.animDelay = 8;
       doitAnimer = bougeH;
     } else if (this.etat === "fall") {
-      frames = this.sprites.fall;
+      frames = spriteSet.fall;
       this.animDelay = 10;
       doitAnimer = true;
     }
 
     if (!frames) {
-      this.img = this.sprites.idle;
+      this.img = spriteSet.idle;
       return;
     }
 
@@ -921,6 +962,12 @@ export class Gardes {
       this.trouCol = null; // ← add
       this.trouRow = null; // ← add
       this.timerInvincible = 60;
+      this.animIndex = 0;
+      this.animTimer = 0;
+      this.setEtat("idle");
+      this.img = this.aLingot
+        ? this.sprites.gold.idle
+        : this.sprites.normal.idle;
     } else {
       this.x += (dx / dist) * this.vitesseRespawn;
       this.y += (dy / dist) * this.vitesseRespawn;
@@ -943,26 +990,11 @@ export class Gardes {
         TAILLE_CELLULE,
         TAILLE_CELLULE,
       );
-
-      // Pantalon doré si le garde transporte un lingot
-      if (this.aLingot) {
-        ctx.fillStyle = "#FFD700";
-        ctx.fillRect(dessineX + 8, dessineY + 18, 16, 10);
-
-        ctx.strokeStyle = "#B8860B";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(dessineX + 8, dessineY + 18, 16, 10);
-      }
     } else {
       ctx.fillStyle = "deepskyblue";
       ctx.fillRect(dessineX, dessineY, TAILLE_CELLULE, TAILLE_CELLULE);
       ctx.strokeStyle = "black";
       ctx.strokeRect(dessineX, dessineY, TAILLE_CELLULE, TAILLE_CELLULE);
-
-      if (this.aLingot) {
-        ctx.fillStyle = "#FFD700";
-        ctx.fillRect(dessineX + 8, dessineY + 18, 16, 10);
-      }
     }
   }
 }
