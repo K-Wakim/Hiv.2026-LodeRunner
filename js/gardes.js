@@ -765,7 +765,8 @@ export class Gardes {
           const typeBas = cellule(this.niveau, c, row + 1);
           possible =
             (estVide(typeCel) || estEchelle(typeCel)) &&
-            (estEchelle(typeBas) || estVide(typeBas));
+            (estEchelle(typeBas) || estVide(typeBas)) &&
+            !this.celluleOccupeeParGarde(c, row + 1, this._tousLesGardes);
         } else {
           // Monter : être sur une échelle dont la case au-dessus est libre/échelle.
           const typeHaut = cellule(this.niveau, c, row - 1);
@@ -927,7 +928,10 @@ export class Gardes {
       const cellsDisponibles = this.niveau[1]
         .map((type, col) => ({ type, col }))
         .filter(
-          ({ type, col }) => type === "_" && this.niveau[2]?.[col] === "B",
+          ({ type, col }) =>
+            type === "_" &&
+            this.niveau[2]?.[col] === "B" &&
+            !this.celluleOccupeeParGarde(col, 1, gardes),
         );
       const cible =
         cellsDisponibles[Math.floor(Math.random() * cellsDisponibles.length)];
