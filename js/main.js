@@ -34,6 +34,7 @@ canvas.focus(); // Pour que le canvas detecte les événements clavier
 
 let etatJeu = "play";
 let tempsFin = 0;
+let pauseDebut = null;
 
 let niveauActuel = 1;
 
@@ -126,6 +127,13 @@ function redessiner() {
 }
 
 function update() {
+  if (keys.jouer) {
+    // Adjust for any pause that was skipped via movement key
+    if (pauseDebut !== null && tempsInitial !== null) {
+      tempsInitial += Date.now() - pauseDebut;
+      pauseDebut = null;
+    }
+  }
   if (etatJeu !== "play") {
     const t = performance.now() - tempsFin;
     redessiner();
@@ -150,8 +158,6 @@ function update() {
     niveauActuel++;
     const score = joueur.score;
     joueur.reset(14, 14, score);
-    `
-    `;
     tempsInitial = null; // Reset timer for next level
     tempsEcoule = "00:00";
     spawnGardes(); // Spawn new guards for the next level
@@ -247,3 +253,32 @@ objLingot.onload = () => redessiner();
 redessiner();
 
 setInterval(update, 16);
+
+// * cheat keys
+window.addEventListener("keyup", (e) => {
+  console.log(e.code);
+  // * Lose game
+  if (e.code === "KeyL") {
+    joueur.vie = 0;
+  }
+
+  // * Win game
+  if (e.code === "KeyW") {
+    joueur.nbrLingots = 6;
+    joueur.col = 18;
+    joueur.row = -1;
+  }
+
+  // * Pause game
+  if (e.code === "Escape") {
+    if (keys.jouer) {
+      keys.jouer = false;
+      pauseDebut = Date.now();
+    } else {
+      if (pauseDebut !== null && tempsInitial !== null) {
+        tempsInitial += Date.now() - pauseDebut;
+      }
+      pauseDebut = null;
+    }
+  }
+});

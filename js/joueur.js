@@ -98,8 +98,16 @@ export class Joueur {
     return Math.floor((this.x + this.w / 2) / TAILLE_CELLULE);
   }
 
+  set col(c) {
+    this.x = c * TAILLE_CELLULE + TAILLE_CELLULE / 2 - this.w / 2;
+  }
+
   get row() {
     return Math.floor((this.y + this.h / 2) / TAILLE_CELLULE);
+  }
+
+  set row(r) {
+    this.y = r * TAILLE_CELLULE + TAILLE_CELLULE / 2 - this.h / 2;
   }
 
   get vie() {
