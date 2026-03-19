@@ -145,6 +145,7 @@ function update() {
   if (joueur.vie <= 0) {
     etatJeu = "gameover";
     tempsFin = performance.now();
+    sons.jouer("gameOver")
     return;
   }
 
@@ -176,6 +177,7 @@ function update() {
     etatJeu = "win";
     tempsFin = performance.now();
     dessinerVictoire(ctx, canvas, 0);
+    sons.jouer("victoire");
     return;
   }
 
